@@ -36,7 +36,7 @@ pred wellFormed {
 }
 
 pred allReachable {
-    all t1 : TreeNode | all t2 : TreeNode | { t1 != t2 =>  }
+    all t1 : TreeNode | all t2 : TreeNode | { t1 != t2 }
 }
 
 test expect {

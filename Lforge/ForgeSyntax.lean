@@ -159,7 +159,7 @@ def Sig.of_syntax : TSyntax `f_sig → MetaM Sig
       | none => pure .unquantified
     let fields ← fields.getElems.toList.mapM Field.of_syntax
     pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := some ancestor.getId, fields := fields }
-  | _ => unreachable!
+  | _ => throwUnsupportedSyntax
 
 -- We need to define both here because of mutually-recursive definitions
 declare_syntax_cat f_fmla

@@ -7,4 +7,16 @@ sig TreeNode {
     children: set TreeNode
 }
 
-#check lone_parent
+sig Pet {
+    owner: one Person
+}
+
+sig Person {
+    pets: set Pet,
+    friends: set Person
+}
+
+#check TreeNode
+#check parent
+#check children
+#print lone_parent

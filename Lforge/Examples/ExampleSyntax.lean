@@ -1,4 +1,5 @@
 import Lforge.ForgeSyntax
+open ForgeSyntax
 open Formula
 open Expression
 open Quantification

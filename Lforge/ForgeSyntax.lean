@@ -1,58 +1,89 @@
-/-
-Structures that represent the syntax of Forge.
--/
 import Lean
-open Lean Elab Meta
+import Lforge.Utils
+open Lean Elab Meta Command Term
 set_option autoImplicit false
 
 /-
-**ForgeSyntax** gives us objects that represent all syntactically valid Forge programs.
-A program is a list of sigs, predicates, and functions. Sigs contain fields,
-predicates contain formulas, and functions contain expressions.
+**ForgeSyntax** is a CST that gives us objects that represent all syntactically
+valid Forge programs. A program is a list of sigs, predicates, and functions.
+Sigs contain fields, predicates contain formulas, and functions contain expressions.
 -/
 namespace ForgeSyntax
 
-def Symbol := Name deriving Repr
-instance : Inhabited Symbol := inferInstanceAs (Inhabited Name)
+/-- A `Symbol` is a Lean name representing sigs, predicates, and functions in Forge. -/
+def Symbol := Name deriving Repr, Inhabited, ToMessageData
 
+/--
+A `Sig.Multiplicity` corresponds to the annotation of the multiplicity of a sig. For example, in
+```
+abstract sig Ingredient {}
+one sig Carrot extends Ingredient {}
+sig TimeStep {}
+```
+`abstract` and `one` correspond to multiplicities on `Ingredient` and `Carrot` respectively, and `TimeStep` is unquantified.
+-/
 inductive Sig.Multiplicity where
-  -- there is always exactly one object of that sig
-  | one
-  -- there is never more than one object of this sig
-  | lone
-  -- any object of this sig must also be a member of some child sig
-  | abstract
-  -- unquantified, no restrictions
+  /--
+  `one` states that there is always exactly one object of that sig.
+  `tok` points to the concrete syntax object that represents this multiplicity annotation.
+  -/
+  | one (tok : Syntax)
+  /-- `lone` there is never more than one object of this sig. That is, that there are zero or one. -/
+  | lone (tok : Syntax)
+  /-- `abstract` states that any object of this sig must also be a member of some child sig. -/
+  | abstract (tok : Syntax)
+  /--
+  `unquantified` means that there are no restrictions on the cardinality of this sig.
+  A Forge sig without a multiplicity annotation is unquantified by default.
+  -/
   | unquantified
-  deriving Repr
-
-instance : Inhabited Sig.Multiplicity := ⟨Sig.Multiplicity.unquantified⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_sig_multiplicity
 syntax "one" : f_sig_multiplicity
 syntax "lone" : f_sig_multiplicity
 syntax "abstract" : f_sig_multiplicity
 
-def Sig.Multiplicity.of_syntax : TSyntax `f_sig_multiplicity → Sig.Multiplicity
-  | `(f_sig_multiplicity| one) => .one
-  | `(f_sig_multiplicity| lone) => .lone
-  | `(f_sig_multiplicity| abstract) => .abstract
-  | _ => unreachable!
+def Sig.Multiplicity.of_syntax (stx : TSyntax `f_sig_multiplicity) : MetaM Sig.Multiplicity :=
+  match stx with
+  | `(f_sig_multiplicity| one) => return .one stx
+  | `(f_sig_multiplicity| lone) => return .lone stx
+  | `(f_sig_multiplicity| abstract) => return .abstract stx
+  | _ => throwUnsupportedSyntax
 
+/--
+A `Field.Multiplicity` corresponds to the annotation of the multiplicity of a field. For example, in
+```
+sig Recipe {
+  ingredients: set Ingredient,
+  main_ingredient: one Ingredient
+}
+```
+`set` and `one` correspond to multiplicities on fields `ingredients` and `main_ingredient` respectively.
+-/
 inductive Field.Multiplicity where
-  -- only one of
-  | one
-  -- one or zero of
-  | lone
-  -- is a -> relation and is a partial function
-  | pfunc
-  -- is a -> relation and is a total function
-  | func
-  -- is any set (no constraints on field)
-  | set
-  deriving Repr
-
-instance : Inhabited Field.Multiplicity := ⟨Field.Multiplicity.set⟩
+  /--
+  There is a single object of this field. On an arrow type `A → B`,
+  this means that this relation contains exactly one pair of `A × B`.
+  -/
+  | one (tok : Syntax)
+  /--
+  There is at most one object of this field.
+  -/
+  | lone (tok : Syntax)
+  /--
+  The relation **must** have arity 2. On relations from `A → B`, `pfunc` states that the relation is a partial function.
+  -/
+  | pfunc (tok : Syntax)
+  /--
+  The relation **must** have arity 2. On relations from `A → B`, `func` states that the relation is a total function.
+  -/
+  | func (tok : Syntax)
+  /--
+  `set` states that the relation is a set, this does not produce any additional quantifications or restraints.
+  -/
+  | set (tok : Syntax)
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_field_multiplicity
 syntax "one" : f_field_multiplicity
@@ -61,67 +92,79 @@ syntax "pfunc" : f_field_multiplicity
 syntax "func" : f_field_multiplicity
 syntax "set" : f_field_multiplicity
 
-def Field.Multiplicity.of_syntax : TSyntax `f_field_multiplicity → Field.Multiplicity
-  | `(f_field_multiplicity| one) => .one
-  | `(f_field_multiplicity| lone) => .lone
-  | `(f_field_multiplicity| pfunc) => .pfunc
-  | `(f_field_multiplicity| func) => .func
-  | `(f_field_multiplicity| set) => .set
-  | _ => unreachable!
+def Field.Multiplicity.of_syntax (stx : TSyntax `f_field_multiplicity) : MetaM Field.Multiplicity :=
+  match stx with
+  | `(f_field_multiplicity| one) => return .one stx
+  | `(f_field_multiplicity| lone) => return .lone stx
+  | `(f_field_multiplicity| pfunc) => return .pfunc stx
+  | `(f_field_multiplicity| func) => return .func stx
+  | `(f_field_multiplicity| set) => return .set stx
+  | _ => throwUnsupportedSyntax
 
+/--
+A `Field` corresponds to a field in a sig.
+-/
 structure Field where
   name : Symbol
+  /--
+  The token that represents the name of the field. This is used for hinting and error reporting.
+  -/
+  name_tok : Syntax
   multiplicity : Field.Multiplicity
+  /--
+  The type of the field. If the type is of arity-1, such as `A`, then the type is `[A]`.
+  Otherwise, if the type is of arity-n, such as `A → B → C`, then the type is `[A, B, C]` in order.
+  -/
   type : List Symbol
-  deriving Repr
-
-instance : Inhabited Field := ⟨{ name := default, multiplicity := default, type := default }⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_field
-syntax ident ":" f_field_multiplicity sepBy1(ident, "->") : f_field
+syntax ident ":" f_field_multiplicity sepBy1(ident, " -> ") : f_field
 
-def Field.of_syntax : TSyntax `f_field → Field
-  | `(f_field| $name:ident : $multiplicity:f_field_multiplicity $type:ident->*) =>
-    let multiplicity := Field.Multiplicity.of_syntax multiplicity
-    { name := name.getId, multiplicity := multiplicity, type := type.getElems.toList.map (λ i ↦ i.getId) }
-  | _ => unreachable!
+def Field.of_syntax : TSyntax `f_field → MetaM Field
+  | `(f_field| $name:ident : $multiplicity:f_field_multiplicity $type:ident->*) => do
+    let multiplicity ← Field.Multiplicity.of_syntax multiplicity
+    pure { name := name.getId, name_tok := name, multiplicity := multiplicity, type := type.getElems.toList.map (λ i ↦ i.getId) }
+  | _ => throwUnsupportedSyntax
 
+/--
+A `Sig` corresponds to a sig in Forge. In a contiguous block of Forge declarations, `Sig`s are lifted
+such that they are defined for all fields that require them.
+-/
 structure Sig where
   quantifier : Sig.Multiplicity
   name : Symbol
+  /--
+  The token that represents the name of the sig. This is used for hinting and error reporting.
+  -/
+  name_tok : Syntax
   ancestor : Option Symbol := none
   fields : List Field
-  deriving Repr
-
-instance : Inhabited Sig := ⟨{ quantifier := default, name := default, ancestor := default, fields := default }⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_sig
 syntax f_sig_multiplicity ? "sig" ident "{" f_field,+ "}" : f_sig
 syntax f_sig_multiplicity ? "sig" ident "extends" ident "{" f_field,+ "}" : f_sig
 
-def Sig.of_syntax : TSyntax `f_sig → Sig
-  | `(f_sig| $quantifier:f_sig_multiplicity ? sig $name:ident { $fields:f_field,* }) =>
-    let quantifier := match quantifier with
+def Sig.of_syntax : TSyntax `f_sig → MetaM Sig
+  | `(f_sig| $quantifier:f_sig_multiplicity ? sig $name:ident { $fields:f_field,* }) => do
+    let quantifier ← match quantifier with
       | some q => Sig.Multiplicity.of_syntax q
-      | none => .unquantified
-    let fields := fields.getElems.toList.map .of_syntax
-    { quantifier := quantifier, name := name.getId, ancestor := none, fields := fields }
-  | `(f_sig| $quantifier:f_sig_multiplicity ? sig $name:ident extends $ancestor:ident { $fields:f_field,* }) =>
-    let quantifier := match quantifier with
+      | none => pure .unquantified
+    let fields ← fields.getElems.toList.mapM Field.of_syntax
+    pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := none, fields := fields }
+  | `(f_sig| $quantifier:f_sig_multiplicity ? sig $name:ident extends $ancestor:ident { $fields:f_field,* }) => do
+    let quantifier ← match quantifier with
       | some q => Sig.Multiplicity.of_syntax q
-      | none => .unquantified
-    let fields := fields.getElems.toList.map .of_syntax
-    { quantifier := quantifier, name := name.getId, ancestor := some ancestor.getId, fields := fields }
+      | none => pure .unquantified
+    let fields ← fields.getElems.toList.mapM Field.of_syntax
+    pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := some ancestor.getId, fields := fields }
   | _ => unreachable!
 
 -- We need to define both here because of mutually-recursive definitions
 declare_syntax_cat f_fmla
 declare_syntax_cat f_expr
 
-/-
-**Standardized arguments** in both formula app and predicate app.
--/
-namespace Arguments
 declare_syntax_cat f_args
 declare_syntax_cat f_arg
 
@@ -130,34 +173,34 @@ syntax ident ":" f_expr : f_arg
 -- arguments
 syntax f_arg,* : f_args
 
-end Arguments
-
 namespace Formula
 
 inductive UnOp where
+  /-- Logical negation on a formula. Produces `¬ <fmla>`. -/
   | not
-  deriving Repr
-instance : Inhabited UnOp := ⟨UnOp.not⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_fmla_unop
 syntax "!" : f_fmla_unop
 syntax "not " : f_fmla_unop
 
-def UnOp.of_syntax : TSyntax `f_fmla_unop → UnOp
+def UnOp.of_syntax : TSyntax `f_fmla_unop → MetaM UnOp
   | `(f_fmla_unop| !)
-  | `(f_fmla_unop| not) => .not
-  | _ => unreachable!
+  | `(f_fmla_unop| not) => return .not
+  | _ => throwUnsupportedSyntax
 
 syntax f_fmla_unop f_fmla : f_fmla
 
 inductive BinOp where
+  /-- Logical conjunction. Produces `<fmla-a> ∧ <fmla-b>`. -/
   | and
+  /-- Logical disjunction. Produces `<fmla-a> ∨ <fmla-b>`. -/
   | or
+  /-- Logical implication. Produces `<fmla-a> → <fmla-b>`. -/
   | implies
+  /-- Logical bijection. Produces `<fmla-a> ↔ <fmla-b>`. -/
   | iff
-  deriving Repr
-
-instance : Inhabited BinOp := ⟨BinOp.and⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_fmla_binop
 syntax "&&" : f_fmla_binop
@@ -169,76 +212,104 @@ syntax "implies" : f_fmla_binop
 syntax "<=>" : f_fmla_binop
 syntax "iff" : f_fmla_binop
 
-def BinOp.of_syntax : TSyntax `f_fmla_binop → BinOp
+def BinOp.of_syntax : TSyntax `f_fmla_binop → MetaM BinOp
   | `(f_fmla_binop| &&)
-  | `(f_fmla_binop| and) => .and
+  | `(f_fmla_binop| and) => return .and
   | `(f_fmla_binop| ||)
-  | `(f_fmla_binop| or) => .or
+  | `(f_fmla_binop| or) => return .or
   | `(f_fmla_binop| =>)
-  | `(f_fmla_binop| implies) => .implies
+  | `(f_fmla_binop| implies) => return .implies
   | `(f_fmla_binop| <=>)
-  | `(f_fmla_binop| iff) => .iff
-  | _ => unreachable!
+  | `(f_fmla_binop| iff) => return .iff
+  | _ => throwUnsupportedSyntax
 
 syntax f_fmla f_fmla_binop f_fmla : f_fmla
 
-inductive ExprUnOp where
-  | some
-  | all
-  | no
-  | lone
-  | one
-  deriving Repr
+/--
+Unary operators on Expressions that produce Formulas.
 
-instance : Inhabited ExprUnOp := ⟨ExprUnOp.some⟩
+These quantify over expressions and count them.
+-/
+inductive ExprUnOp where
+  /-- The expression is not empty. Produces `ExprQuantifier.one <expr>`. -/
+  | some
+  /-- The expression is empty. Produces `ExprQuantifier.no <expr>`. -/
+  | no
+  /-- The expression has at most one element. Produces `ExprQuantifier.lone <expr>`. -/
+  | lone
+  /-- The expression has exactly one element. Produces `ExprQuantifier.one <expr>`. -/
+  | one
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_fmla_of_expr_unop
 syntax "some" : f_fmla_of_expr_unop
-syntax "all" : f_fmla_of_expr_unop
 syntax "no" : f_fmla_of_expr_unop
 syntax "lone" : f_fmla_of_expr_unop
 syntax "one" : f_fmla_of_expr_unop
 
-def ExprUnOp.of_syntax : TSyntax `f_fmla_of_expr_unop → ExprUnOp
-  | `(f_fmla_of_expr_unop| some) => .some
-  | `(f_fmla_of_expr_unop| all) => .all
-  | `(f_fmla_of_expr_unop| no) => .no
-  | `(f_fmla_of_expr_unop| lone) => .lone
-  | `(f_fmla_of_expr_unop| one) => .one
-  | _ => unreachable!
+def ExprUnOp.of_syntax : TSyntax `f_fmla_of_expr_unop → MetaM ExprUnOp
+  | `(f_fmla_of_expr_unop| some) => return .some
+  | `(f_fmla_of_expr_unop| no) => return .no
+  | `(f_fmla_of_expr_unop| lone) => return .lone
+  | `(f_fmla_of_expr_unop| one) => return .one
+  | _ => throwUnsupportedSyntax
 
 syntax f_fmla_of_expr_unop f_expr : f_fmla
 
-inductive ExprBinOp where
-  | in
-  | eq
-  | neq
-  deriving Repr
+/--
+Binary operators on Expressions that produce Formulas.
 
-instance : Inhabited ExprBinOp := ⟨ExprBinOp.in⟩
+These compare two expressions.
+-/
+inductive ExprBinOp where
+  /-- The first expression is a subset of the second. Produces `ExprCmp.subset <expr-a> <expr-b>`. -/
+  | in
+  /-- The two expressions are equal. Produces `ExprCmp.eq <expr-a> <expr-b>`. -/
+  | eq
+  /-- The two expressions are not equal. Produces `¬ ExprCmp.eq <expr-a> <expr-b>`. -/
+  | neq
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_fmla_of_expr_binop
 syntax "in" : f_fmla_of_expr_binop
 syntax "=" : f_fmla_of_expr_binop
 syntax "!=" : f_fmla_of_expr_binop
 
-def ExprBinOp.of_syntax : TSyntax `f_fmla_of_expr_binop → ExprBinOp
-  | `(f_fmla_of_expr_binop| in) => .in
-  | `(f_fmla_of_expr_binop| =) => .eq
-  | `(f_fmla_of_expr_binop| !=) => .neq
-  | _ => unreachable!
+def ExprBinOp.of_syntax : TSyntax `f_fmla_of_expr_binop → MetaM ExprBinOp
+  | `(f_fmla_of_expr_binop| in) => return .in
+  | `(f_fmla_of_expr_binop| =) => return .eq
+  | `(f_fmla_of_expr_binop| !=) => return .neq
+  | _ => throwUnsupportedSyntax
 
 syntax f_expr f_fmla_of_expr_binop f_expr : f_fmla
 
-inductive ExprQuantifier where
+/--
+A quantification of the form
+```
+<quantifier> x : <expr> | <fmla>
+```
+where `x` is bound in `<fmla>`. If the type of `<expr>` is a direct type, then the quantification is like
+```lean
+∀ x : <expr>, <fmla>
+∃ x : <expr>, <fmla>
+∃! x : <expr>, <fmla>
+...
+```
+otherwise will desugar into
+```lean
+∀ x : <type-of-expr>, x ∈ <expr> → <fmla>
+∃ x : <type-of-expr>, x ∈ <expr> ∧ <fmla>
+∃! x : <type-of-expr>, x ∈ <expr> ∧ <fmla>
+...
+```
+-/
+inductive Quantifier where
   | no
   | lone
   | one
   | some
   | all
-  deriving Repr
-
-instance : Inhabited ExprQuantifier := ⟨ExprQuantifier.no⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_fmla_quantifier
 syntax "no" : f_fmla_quantifier
@@ -247,13 +318,13 @@ syntax "one" : f_fmla_quantifier
 syntax "some" : f_fmla_quantifier
 syntax "all" : f_fmla_quantifier
 
-def ExprQuantifier.of_syntax : TSyntax `f_fmla_quantifier → ExprQuantifier
-  | `(f_fmla_quantifier| no) => .no
-  | `(f_fmla_quantifier| lone) => .lone
-  | `(f_fmla_quantifier| one) => .one
-  | `(f_fmla_quantifier| some) => .some
-  | `(f_fmla_quantifier| all) => .all
-  | _ => unreachable!
+def Quantifier.of_syntax : TSyntax `f_fmla_quantifier → MetaM Quantifier
+  | `(f_fmla_quantifier| no) => return .no
+  | `(f_fmla_quantifier| lone) => return .lone
+  | `(f_fmla_quantifier| one) => return .one
+  | `(f_fmla_quantifier| some) => return .some
+  | `(f_fmla_quantifier| all) => return .all
+  | _ => throwUnsupportedSyntax
 
 syntax f_fmla_quantifier f_args "|" "{" f_fmla "}" : f_fmla
 syntax f_fmla_quantifier f_args "|" f_fmla : f_fmla
@@ -282,20 +353,18 @@ inductive UnOp where
   | transpose
   | transitive_closure
   | reflexive_transitive_closure
-  deriving Repr
-
-instance : Inhabited UnOp := ⟨UnOp.transpose⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_expr_unop
 syntax "~" : f_expr_unop
 syntax "^" : f_expr_unop
 syntax "*" : f_expr_unop
 
-def UnOp.of_syntax : TSyntax `f_expr_unop → UnOp
-  | `(f_expr_unop| ~) => .transpose
-  | `(f_expr_unop| ^) => .transitive_closure
-  | `(f_expr_unop| *) => .reflexive_transitive_closure
-  | _ => unreachable!
+def UnOp.of_syntax : TSyntax `f_expr_unop → MetaM UnOp
+  | `(f_expr_unop| ~) => return .transpose
+  | `(f_expr_unop| ^) => return .transitive_closure
+  | `(f_expr_unop| *) => return .reflexive_transitive_closure
+  | _ => throwUnsupportedSyntax
 
 syntax f_expr_unop f_expr : f_expr
 
@@ -305,9 +374,7 @@ inductive BinOp where
   | intersection
   | join
   | cross
-  deriving Repr
-
-instance : Inhabited BinOp := ⟨BinOp.union⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_expr_binop
 syntax "+" : f_expr_binop
@@ -316,13 +383,13 @@ syntax "&" : f_expr_binop
 syntax "." : f_expr_binop
 syntax "->" : f_expr_binop
 
-def BinOp.of_syntax : TSyntax `f_expr_binop → BinOp
-  | `(f_expr_binop| +) => .union
-  | `(f_expr_binop| -) => .set_difference
-  | `(f_expr_binop| &) => .intersection
-  | `(f_expr_binop| .) => .join
-  | `(f_expr_binop| ->) => .cross
-  | _ => unreachable!
+def BinOp.of_syntax : TSyntax `f_expr_binop → MetaM BinOp
+  | `(f_expr_binop| +) => return .union
+  | `(f_expr_binop| -) => return .set_difference
+  | `(f_expr_binop| &) => return .intersection
+  | `(f_expr_binop| .) => return .join
+  | `(f_expr_binop| ->) => return .cross
+  | _ => throwUnsupportedSyntax
 
 syntax f_expr f_expr_binop f_expr : f_expr
 
@@ -360,13 +427,13 @@ mutual
     /- Quantifiers
        Quantifies [var](s) over [expr](s) and binds [var](s) in [fmla] -/
     -- Exists and satisfies property <fmla>
-    | quantifier (quantification : Formula.ExprQuantifier) (vars : List (Symbol × Expression)) (fmla : Formula)
+    | quantifier (quantification : Formula.Quantifier) (vars : List (Symbol × Expression)) (fmla : Formula)
 
     /- Predicate Applications -/
-    | app (pref_name : Symbol) (args : List Expression)
+    | app (pred_name : Symbol) (args : List Expression)
     | true
     | false
-    deriving Repr
+    deriving Repr, Inhabited
 
   inductive Expression where
     | unop (op : Expression.UnOp) (expr : Expression)
@@ -383,231 +450,291 @@ mutual
     | literal (value : Symbol)
 
     | let (id : Symbol) (expression : Expression) (body : Expression)
-    deriving Repr
+    deriving Repr, Inhabited
 end
-
-instance : Inhabited Formula := ⟨Formula.true⟩
-instance : Inhabited Expression := ⟨Expression.literal Name.anonymous⟩
 
 mutual
-  def Arguments.one_of_syntax : TSyntax `f_arg → Symbol × Expression
-    | `(f_arg| $name:ident : $expr:f_expr) => (name.getId, Expression.of_syntax expr)
-    | _ => unreachable!
+  partial def Arguments.one_of_syntax : TSyntax `f_arg → MetaM (Symbol × Expression)
+    | `(f_arg| $name:ident : $expr:f_expr) =>
+      return (name.getId, ← Expression.of_syntax expr)
+    | _ => throwUnsupportedSyntax
 
-  def Arguments.of_syntax : TSyntax `f_args → List (Symbol × Expression)
-    | `(f_args| $args:f_arg,* ) => args.getElems.toList.map Arguments.one_of_syntax
-    | _ => unreachable!
+  partial def Arguments.of_syntax : TSyntax `f_args → MetaM (List (Symbol × Expression))
+    | `(f_args| $args:f_arg,* ) => args.getElems.toList.mapM Arguments.one_of_syntax
+    | _ => throwUnsupportedSyntax
 
-  def Formula.of_syntax : TSyntax `f_fmla → Formula
+  partial def Formula.of_syntax : TSyntax `f_fmla → MetaM Formula
     | `(f_fmla| $unop:f_fmla_unop $fmla:f_fmla) =>
-      Formula.unop (Formula.UnOp.of_syntax unop) (Formula.of_syntax fmla)
+      return Formula.unop (← Formula.UnOp.of_syntax unop) (← Formula.of_syntax fmla)
     | `(f_fmla| $fmla_a:f_fmla $binop:f_fmla_binop $fmla_b:f_fmla) =>
-      Formula.binop (Formula.BinOp.of_syntax binop) (Formula.of_syntax fmla_a) (Formula.of_syntax fmla_b)
+      return Formula.binop (← Formula.BinOp.of_syntax binop) (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b)
     | `(f_fmla| $fmla_a:f_fmla => $fmla_b:f_fmla else $fmla_c:f_fmla)
     | `(f_fmla| $fmla_a:f_fmla implies $fmla_b:f_fmla else $fmla_c:f_fmla) =>
-      Formula.implies_else (Formula.of_syntax fmla_a) (Formula.of_syntax fmla_b) (Formula.of_syntax fmla_c)
+      return Formula.implies_else (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) (← Formula.of_syntax fmla_c)
     | `(f_fmla| $unop:f_fmla_of_expr_unop $expr_b:f_expr) =>
-      Formula.expr_unop (Formula.ExprUnOp.of_syntax unop) (Expression.of_syntax expr_b)
+      return Formula.expr_unop (← Formula.ExprUnOp.of_syntax unop) (← Expression.of_syntax expr_b)
     | `(f_fmla| $expr_a:f_expr $binop:f_fmla_of_expr_binop $expr_b:f_expr) =>
-      Formula.expr_binop (Formula.ExprBinOp.of_syntax binop) (Expression.of_syntax expr_a) (Expression.of_syntax expr_b)
+      return Formula.expr_binop (← Formula.ExprBinOp.of_syntax binop) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b)
     | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | { $fmla:f_fmla })
-    | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | $fmla:f_fmla ) =>
-      let quantification := Formula.ExprQuantifier.of_syntax quantifier
-      Formula.quantifier quantification (Arguments.of_syntax args) (Formula.of_syntax fmla)
+    | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | $fmla:f_fmla ) => do
+      let quantification ← Formula.Quantifier.of_syntax quantifier
+      return Formula.quantifier quantification (← Arguments.of_syntax args) (← Formula.of_syntax fmla)
     -- single predicate
-    | `(f_fmla| $name:ident )
-      => Formula.app name.getId []
-    | `(f_fmla| $name:ident [ $expr,* ])
-      => Formula.app name.getId (expr.getElems.toList.map Expression.of_syntax)
-    | `(f_fmla| true) => Formula.true
-    | `(f_fmla| false) => Formula.false
-    | _ => unreachable!
+    | `(f_fmla| $name:ident ) => do
+      return Formula.app name.getId []
+    | `(f_fmla| $name:ident [ $expr,* ]) => do
+      return Formula.app name.getId (← expr.getElems.toList.mapM Expression.of_syntax)
+    | `(f_fmla| true) => return Formula.true
+    | `(f_fmla| false) => return Formula.false
+    | _ => throwUnsupportedSyntax
 
-  def Expression.of_syntax : TSyntax `f_expr → Expression
+  partial def Expression.of_syntax : TSyntax `f_expr → MetaM Expression
     | `(f_expr| $unop:f_expr_unop $expr:f_expr) =>
-      Expression.unop (Expression.UnOp.of_syntax unop) (Expression.of_syntax expr)
+      return Expression.unop (← Expression.UnOp.of_syntax unop) (← Expression.of_syntax expr)
     | `(f_expr| $expr_a:f_expr $binop:f_expr_binop $expr_b:f_expr) =>
-      Expression.binop (Expression.BinOp.of_syntax binop) (Expression.of_syntax expr_a) (Expression.of_syntax expr_b)
+      return Expression.binop (← Expression.BinOp.of_syntax binop) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b)
     | `(f_expr| if $fmla:f_fmla then $expr_a:f_expr else $expr_b:f_expr) =>
-      Expression.if_then_else (Formula.of_syntax fmla) (Expression.of_syntax expr_a) (Expression.of_syntax expr_b)
+      return Expression.if_then_else (← Formula.of_syntax fmla) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b)
     | `(f_expr| { $args:f_args | $fmla:f_fmla }) =>
-      Expression.set_comprehension (Arguments.of_syntax args) (Formula.of_syntax fmla)
+      return Expression.set_comprehension (← Arguments.of_syntax args) (← Formula.of_syntax fmla)
     | `(f_expr| $expr_a:f_expr [ $expr,* ]) =>
-      Expression.app (Expression.of_syntax expr_a) (expr.getElems.toList.map Expression.of_syntax)
-    | `(f_expr| $name:ident) => Expression.literal name.getId
+      return Expression.app (← Expression.of_syntax expr_a) (← expr.getElems.toList.mapM Expression.of_syntax)
+    | `(f_expr| $name:ident) => return Expression.literal name.getId
     | `(f_expr| let $id:ident = $expr_a:f_expr | $expr_b:f_expr) =>
-      Expression.let id.getId (Expression.of_syntax expr_a) (Expression.of_syntax expr_b)
-    | _ => unreachable!
+      return Expression.let id.getId (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b)
+    | _ => throwUnsupportedSyntax
 end
-termination_by
-  _ s => s.raw
 
 structure Predicate where
   name : Symbol
   args : List (Symbol × Expression) -- (name, type) pairs
   body : Formula -- with args bound
-  deriving Repr
-
-instance : Inhabited Predicate := ⟨{ name := default, args := default, body := default }⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_pred
 declare_syntax_cat f_pred_args
 syntax "[" f_args "]" : f_pred_args
 syntax "pred" ident f_pred_args ? "{" f_fmla+ "}" : f_pred
 
-def Predicate.of_syntax : TSyntax `f_pred → Predicate
-  | `(f_pred| pred $name:ident { $fmla:f_fmla* }) =>
+def Predicate.of_syntax : TSyntax `f_pred → MetaM Predicate
+  | `(f_pred| pred $name:ident { $fmla:f_fmla* }) => do
     let args := []
-    let body := fmla |> Array.toList |> List.foldr (λ elt acc ↦ .binop .and (.of_syntax elt) acc) Formula.true
-    { name := name.getId, args := args, body := body }
-  | `(f_pred| pred $name:ident [ $args:f_args ] { $fmla:f_fmla* }) =>
+    let body ← fmla
+      |> Array.toList
+      |> List.foldrM (λ elt acc ↦ do return .binop .and (← Formula.of_syntax elt) acc) Formula.true
+    return { name := name.getId, args := args, body := body }
+  | `(f_pred| pred $name:ident [ $args:f_args ] { $fmla:f_fmla* }) => do
     let args := Arguments.of_syntax args
-    let body := fmla |> Array.toList |> List.foldr (λ elt acc ↦ .binop .and (.of_syntax elt) acc)  Formula.true
-    { name := name.getId, args := args, body := body }
-  | _ => unreachable!
+    let body ← fmla
+      |> Array.toList
+      |> List.foldrM (λ elt acc ↦ do return .binop .and (← Formula.of_syntax elt) acc) Formula.true
+    return { name := name.getId, args := ← args, body := body }
+  | _ => throwUnsupportedSyntax
 
 structure Function where
   name : Symbol
   args : List (Symbol × Expression) -- (name, type) pairs
   result_type : Expression -- ignored in Forge but we'll check
   body : Expression -- with args bound
-  deriving Repr
-
-instance : Inhabited Function := ⟨{ name := default, args := default, result_type := default, body := default }⟩
+  deriving Repr, Inhabited
 
 declare_syntax_cat f_fun
 
 syntax "fun" ident "[" f_args "]" ":" (f_field_multiplicity)? f_expr "{" f_expr "}" : f_fun
 
-def Function.of_syntax : TSyntax `f_fun → Function
-  | `(f_fun| fun $name:ident [ $args:f_args ] : $_? $result_type:f_expr { $expr:f_expr }) =>
-    let args := Arguments.of_syntax args
-    let result_type := Expression.of_syntax result_type
-    let body := Expression.of_syntax expr
-    { name := name.getId, args := args, result_type := result_type, body := body }
-  | _ => unreachable!
+def Function.of_syntax : TSyntax `f_fun → MetaM Function
+  | `(f_fun| fun $name:ident [ $args:f_args ] : $_? $result_type:f_expr { $expr:f_expr }) => do
+    let args ← Arguments.of_syntax args
+    let result_type ← Expression.of_syntax result_type
+    let body ← Expression.of_syntax expr
+    return { name := name.getId, args := args, result_type := result_type, body := body }
+  | _ => throwUnsupportedSyntax
 
 structure ForgeModel where
   sigs : List Sig
   predicates : List Predicate
   functions : List Function
-  deriving Repr
+  deriving Repr, Inhabited
 
-instance : Inhabited ForgeModel := ⟨{ sigs := default, predicates := default, functions := default }⟩
-
-declare_syntax_cat f_term
-syntax f_sig : f_term
-syntax f_pred : f_term
-syntax f_fun : f_term
+declare_syntax_cat f_command
+syntax f_sig : f_command
+syntax f_pred : f_command
+syntax f_fun : f_command
 
 declare_syntax_cat f_program
-syntax f_term* : f_program
+syntax f_command* : f_program
 
-def term_of_syntax : TSyntax `f_term → ForgeModel
-  | `(f_term| $s:f_sig) => { sigs := [Sig.of_syntax s], predicates := [], functions := [] }
-  | `(f_term| $p:f_pred) => { sigs := [], predicates := [Predicate.of_syntax p], functions := [] }
-  | `(f_term| $f:f_fun) => { sigs := [], predicates := [], functions := [Function.of_syntax f] }
-  | _ => unreachable!
+def of_syntax : TSyntax `f_program → MetaM ForgeModel
+  | `(f_program| $terms:f_command* ) => do
+    terms.foldlM (λ acc term ↦
+        match term with
+        | `(f_command| $s:f_sig) => do
+          pure { acc with sigs := (← Sig.of_syntax s) :: acc.sigs}
+        | `(f_command| $p:f_pred) => do
+          pure { acc with predicates := (← Predicate.of_syntax p) :: acc.predicates }
+        | `(f_command| $f:f_fun) => do
+          pure { acc with functions := (← Function.of_syntax f) :: acc.functions }
+        | _ => throwUnsupportedSyntax
+      ) { sigs := [], predicates := [], functions := [] : ForgeModel}
+  | _ => throwUnsupportedSyntax
 
-def of_syntax : TSyntax `f_program → ForgeModel
-  | `(f_program| $terms:f_term* ) =>
-    terms.foldl
-    (λ acc term ↦
-      match term with
-      | `(f_term| $s:f_sig) => { acc with sigs := Sig.of_syntax s :: acc.sigs }
-      | `(f_term| $p:f_pred) => { acc with predicates := Predicate.of_syntax p :: acc.predicates }
-      | `(f_term| $f:f_fun) => { acc with functions := Function.of_syntax f :: acc.functions }
-      | _ => unreachable!
-    ) { sigs := [], predicates := [], functions := [] }
-  | _ => unreachable!
+-- This allows us to use forge_commands as honest-to-goodness Lean syntax
+syntax (name := forge_program) f_program : command
+
+partial def arrowTypeOfList (types : List Symbol) : TermElabM Expr := do
+  match types with
+  | [] =>
+    pure (mkSort levelZero)
+  | type :: rest =>
+    mkArrow (mkConst type) (← arrowTypeOfList rest)
+
+partial def arrowValueOfList (types : List Symbol) : TermElabM Expr := do
+  match types with
+  | [] =>
+    pure (mkConst `True)
+  | type :: rest =>
+    pure (.lam .anonymous (mkConst type) (← arrowValueOfList rest) .default)
+
+def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : CommandElabM Unit := do
+  let env ← getEnv
+  let helper (pre : String) (quantifier_predicate : Name) (tok : Syntax) : CommandElabM Unit := (do
+    let statement ← liftTermElabM (mkAppM quantifier_predicate #[mkConst f.name])
+    logInfoAt tok m!"axiom {pre}{f.name} : {statement}"
+    let decl := Declaration.axiomDecl {
+      name := f.name.appendBefore pre,
+      levelParams := [],
+      type := statement,
+      isUnsafe := False,
+    }
+    match env.addDecl decl with
+    | Except.ok env => setEnv env
+    | Except.error _ =>
+      throwErrorAt tok m!"Failed to add axiom one_{f.name}.")
+  match m with
+  | .one tok => helper "one_" ``FieldQuantifier.one tok
+  | .lone tok => helper "lone_" ``FieldQuantifier.lone tok
+  | .pfunc tok => logInfoAt tok m!"field {f.name} : {f.type} pfunc"
+  | .func tok => logInfoAt tok m!"field {f.name} : {f.type} func"
+  | .set _ => return
+
+def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := do
+  let fieldType ← liftTermElabM (arrowTypeOfList ([s.name] ++ f.type))
+  logInfoAt f.name_tok m!"opaque {f.name} : {fieldType}"
+  let fieldVal ← liftTermElabM (arrowValueOfList ([s.name] ++ f.type))
+  let fieldDecl := Declaration.opaqueDecl {
+    name := f.name,
+    value := fieldVal,
+    levelParams := [],
+    type := fieldType,
+    isUnsafe := False,
+  }
+  let env ← getEnv
+  match env.addDecl fieldDecl with
+  | Except.ok env => setEnv env
+  | Except.error _ =>
+    throwErrorAt f.name_tok m!"Failed to add field `{f.name}`. This could be because \n * `{f.name}` has already been defined within this scope. Make sure fields across sigs have unique names. \n * The type of `{f.name}` you have tried to define is invalid"
+  f.multiplicity.elab s f
+
+def Sig.elab (s : Sig): CommandElabM Unit := do
+  let env ← getEnv
+  let sigDecl := Declaration.opaqueDecl {
+    name := s.name,
+    value := mkSort levelZero,
+    levelParams := [],
+    type := mkSort levelOne,
+    isUnsafe := False,
+  }
+  logInfoAt s.name_tok m!"opaque {s.name} : Type"
+  match env.addDecl sigDecl with
+  | Except.ok env => setEnv env
+  | Except.error _ =>
+    throwErrorAt s.name_tok m!"Failed to add declaration {s.name}. This could be because {s.name} has already been defined within this scope. "
+
+/--
+We need to elaborate all top-level sigs before all fields can be elaborated,
+so `Sig.lift_and_elab` will elab all Sigs and then all of their fields.
+-/
+def Sig.lift_and_elab (sigs : List Sig) : CommandElabM Unit := do
+  sigs.forM Sig.elab
+  sigs.forM (λ s ↦ s.fields.forM (Field.elab s))
+
+mutual
+partial def Formula.elab : Formula → TermElabM Expr
+  | .unop op fmla => do
+    let fmla ← fmla.elab
+    match op with
+    | Formula.UnOp.not => mkAppM ``Not #[fmla]
+  | Formula.binop op fmla_a fmla_b => do
+    let fmla_a ← fmla_a.elab
+    let fmla_b ← fmla_b.elab
+    match op with
+    | Formula.BinOp.and => mkAppM ``And #[fmla_a, fmla_b]
+    | Formula.BinOp.or => mkAppM ``Or #[fmla_a, fmla_b]
+    | Formula.BinOp.implies => mkAppM ``Implies #[fmla_a, fmla_b]
+    | Formula.BinOp.iff => mkAppM ``Iff #[fmla_a, fmla_b]
+  | Formula.implies_else fmla_a fmla_b fmla_c => do
+    let fmla_a ← fmla_a.elab
+    let fmla_b ← fmla_b.elab
+    let fmla_c ← fmla_c.elab
+    mkAppM ``And #[
+      ← mkAppM ``Implies #[fmla_a, fmla_b],
+      ← mkAppM ``Implies #[fmla_a, ← mkAppM ``Not #[fmla_b]]]
+  | Formula.expr_unop op expr => do
+    let expr ← expr.elab
+    match op with
+    | Formula.ExprUnOp.some => mkAppM ``ExprQuantifier.some #[expr]
+    | Formula.ExprUnOp.no => mkAppM ``ExprQuantifier.no #[expr]
+    | Formula.ExprUnOp.lone => mkAppM ``ExprQuantifier.lone #[expr]
+    | Formula.ExprUnOp.one => mkAppM ``ExprQuantifier.one #[expr]
+  | Formula.expr_binop op expr_a expr_b => do
+    let expr_a ← expr_a.elab
+    let expr_b ← expr_b.elab
+    match op with
+    | Formula.ExprBinOp.in => mkAppM ``ExprCmp.subset #[expr_a, expr_b]
+    | Formula.ExprBinOp.eq => mkAppM ``ExprCmp.eq #[expr_a, expr_b]
+    | Formula.ExprBinOp.neq => mkAppM ``Not #[← mkAppM ``ExprCmp.eq #[expr_a, expr_b]]
+  | Formula.quantifier quantification vars fmla => throwUnsupportedSyntax -- TODO!!
+  | Formula.app name args => do
+    let args ← args.mapM Expression.elab
+    mkAppM name args.toArray
+  | Formula.true => mkConst ``True
+  | Formula.false => mkConst ``False
+
+partial def Expression.elab : Expression → TermElabM Expr
+  | Expression.unop op expr => throwUnsupportedSyntax -- TODO!!
+  | Expression.binop op expr_a expr_b => throwUnsupportedSyntax -- TODO!!
+  | Expression.if_then_else fmla expr_a expr_b => throwUnsupportedSyntax -- TODO!!
+  | Expression.set_comprehension vars fmla => throwUnsupportedSyntax -- TODO!!
+  | Expression.app function args => do
+    let function ← function.elab
+    let args ← args.mapM Expression.elab
+    mkAppM' function args.toArray
+  | Expression.literal value => mkConst value
+  | Expression.let id expression body => throwUnsupportedSyntax -- TODO!!
+end
+
+def Predicate.elab (p : Predicate) : CommandElabM Unit := do
+  let env ← getEnv
+  let predDecl := Declaration.defnDecl {
+    name := p.name,
+    levelParams := [],
+    type := mkSort levelZero,
+    hints := ReducibilityHints.opaque,
+    value := ← liftTermElabM p.body.elab,
+    safety := .safe,
+  }
+  match env.addDecl predDecl with
+  | Except.ok env => setEnv env
+  | Except.error _ =>
+    throwError m!"Failed to add predicate `{p.name}`."
+
+@[command_elab forge_program]
+def forgeImpl : CommandElab
+  | `(command| $s:f_program) => do
+    let model ← liftTermElabM (of_syntax s)
+    -- Elaborate all sigs first, this is so sig Types are defined (and lifted) before we try to define any fields, functions or predicates
+    Sig.lift_and_elab model.sigs
+    model.predicates.forM Predicate.elab
+  | _ => throwUnsupportedSyntax
 
 end ForgeSyntax
-
-def test : TermElabM ForgeSyntax.ForgeModel := do
-  let stx ← `(f_program|
-sig TreeNode {
-    parent: lone TreeNode,
-    children: set TreeNode
-}
-
-pred treeRoot[t: TreeNode] {
-    no t.parent
-}
-
-pred treeChild[t: TreeNode] {
-    some t.parent
-}
-
-pred notOwnParent[t: TreeNode] {
-    t.parent = t
-}
-
-pred allNotOwnParent {
-    all t : TreeNode | { notOwnParent[t] }
-}
-
-pred oneRoot {
-    one t : TreeNode | { treeRoot[t] }
-}
-
-pred parentOfChildren {
-    all t1 : TreeNode | all t2 : TreeNode | { t1.parent = t2 <=> t1 in t2.children }
-}
-
-pred allReachable {
-    all t1 : TreeNode | all t2 : TreeNode | { t1 = t2 }
-}
-
--- this breaks!
-pred wellFormed {
-    allNotOwnParent
-    oneRoot
-    parentOfChildren
-}
-)
-  pure (ForgeSyntax.of_syntax stx)
-
-#eval test
-
-syntax "⟪" f_program "⟫" : term
-
-#check ⟪
-sig TreeNode {
-    parent: lone TreeNode,
-    children: set TreeNode
-}
-
-pred treeRoot[t: TreeNode] {
-    no t.parent
-}
-
-pred treeChild[t: TreeNode] {
-    some t.parent
-}
-
-pred notOwnParent[t: TreeNode] {
-    t.parent != t
-}
-
-pred allNotOwnParent {
-    all t : TreeNode | { notOwnParent[t] }
-}
-
-pred oneRoot {
-    one t : TreeNode | { treeRoot[t] }
-}
-
-pred parentOfChildren {
-    all t1 : TreeNode | all t2 : TreeNode | { t1.parent = t2 <=> t1 in t2.children }
-}
-
-pred wellFormed {
-    allNotOwnParent
-    oneRoot
-    parentOfChildren
-}
-
-pred allReachable {
-    all t1 : TreeNode | all t2 : TreeNode | { t1 != t2 }
-}
-⟫

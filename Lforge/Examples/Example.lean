@@ -3,6 +3,7 @@ import Mathlib.Tactic
 set_option autoImplicit false
 
 opaque Pet : Type
+
 opaque Person : Type
 
 opaque owner : Pet → Person → Prop
@@ -14,6 +15,8 @@ opaque friends : Person → Person → Prop
 
 def owner_owns_pet : Prop :=
   ∀ p : Person, ∀ pet : Pet, pets p pet ↔ owner pet p
+
+#check true
 
 def one_friend_owns_one_pet (p : Person) : Prop :=
   ∃! fs : Person, friends p fs ∧ ∃! pet : Pet, pets fs pet

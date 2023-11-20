@@ -27,13 +27,16 @@ namespace ExprQuantifier
   def some {a : Type} (f : a → Prop) :=
     ∃ t : a, f t
 
+end ExprQuantifier
+
+namespace ExprCmp
   def subset {a : Type} (f g : Set a) :=
-    ∀ x : a, f x
+    ∀ t : a, t ∈ f → t ∈ g
 
   def eq {a : Type} (f g : a → Prop) :=
     ∀ t : a, f t ↔ g t
 
-end ExprQuantifier
+end ExprCmp
 
 namespace FieldQuantifier
   def one {α : Type} {β : Type} (f : α → β → Prop) :=

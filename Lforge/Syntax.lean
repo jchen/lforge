@@ -1,10 +1,9 @@
 import Lean
-import Lforge.Utils
-open Lean Elab Meta Command Term
+open Lean Elab Meta Command Term System
 set_option autoImplicit false
 
 /-
-**ForgeSyntax** is a CST that gives us objects that represent all syntactically
+The Forge CST that gives us objects that represent all syntactically
 valid Forge programs. A program is a list of sigs, predicates, and functions.
 Sigs contain fields, predicates contain formulas, and functions contain expressions.
 -/
@@ -507,6 +506,7 @@ end
 
 structure Predicate where
   name : Symbol
+  name_tok : Syntax
   args : List (Symbol × Expression) -- (name, type) pairs
   body : Formula -- with args bound
   deriving Repr, Inhabited
@@ -522,17 +522,18 @@ def Predicate.of_syntax : TSyntax `f_pred → MetaM Predicate
     let body ← fmla
       |> Array.toList
       |> List.foldrM (λ elt acc ↦ do return .binop .and (← Formula.of_syntax elt) acc) Formula.true
-    return { name := name.getId, args := args, body := body }
+    return { name := name.getId, name_tok := name, args := args, body := body }
   | `(f_pred| pred $name:ident [ $args:f_args ] { $fmla:f_fmla* }) => do
     let args := Arguments.of_syntax args
     let body ← fmla
       |> Array.toList
       |> List.foldrM (λ elt acc ↦ do return .binop .and (← Formula.of_syntax elt) acc) Formula.true
-    return { name := name.getId, args := ← args, body := body }
+    return { name := name.getId, name_tok := name, args := ← args, body := body }
   | _ => throwUnsupportedSyntax
 
 structure Function where
   name : Symbol
+  name_tok : Syntax
   args : List (Symbol × Expression) -- (name, type) pairs
   result_type : Expression -- ignored in Forge but we'll check
   body : Expression -- with args bound
@@ -547,7 +548,7 @@ def Function.of_syntax : TSyntax `f_fun → MetaM Function
     let args ← Arguments.of_syntax args
     let result_type ← Expression.of_syntax result_type
     let body ← Expression.of_syntax expr
-    return { name := name.getId, args := args, result_type := result_type, body := body }
+    return { name := name.getId, name_tok := name, args := args, result_type := result_type, body := body }
   | _ => throwUnsupportedSyntax
 
 structure ForgeModel where
@@ -564,7 +565,7 @@ syntax f_fun : f_command
 declare_syntax_cat f_program
 syntax f_command* : f_program
 
-def of_syntax : TSyntax `f_program → MetaM ForgeModel
+def ForgeModel.of_syntax : TSyntax `f_program → MetaM ForgeModel
   | `(f_program| $terms:f_command* ) => do
     terms.foldlM (λ acc term ↦
         match term with
@@ -576,165 +577,6 @@ def of_syntax : TSyntax `f_program → MetaM ForgeModel
           pure { acc with functions := (← Function.of_syntax f) :: acc.functions }
         | _ => throwUnsupportedSyntax
       ) { sigs := [], predicates := [], functions := [] : ForgeModel}
-  | _ => throwUnsupportedSyntax
-
--- This allows us to use forge_commands as honest-to-goodness Lean syntax
-syntax (name := forge_program) f_program : command
-
-partial def arrowTypeOfList (types : List Symbol) : TermElabM Expr := do
-  match types with
-  | [] =>
-    pure (mkSort levelZero)
-  | type :: rest =>
-    mkArrow (mkConst type) (← arrowTypeOfList rest)
-
-partial def arrowValueOfList (types : List Symbol) : TermElabM Expr := do
-  match types with
-  | [] =>
-    pure (mkConst `True)
-  | type :: rest =>
-    pure (.lam .anonymous (mkConst type) (← arrowValueOfList rest) .default)
-
-def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : CommandElabM Unit := do
-  let env ← getEnv
-  let helper (pre : String) (quantifier_predicate : Name) (tok : Syntax) : CommandElabM Unit := (do
-    let statement ← liftTermElabM (mkAppM quantifier_predicate #[mkConst f.name])
-    logInfoAt tok m!"axiom {pre}{f.name} : {statement}"
-    let decl := Declaration.axiomDecl {
-      name := f.name.appendBefore pre,
-      levelParams := [],
-      type := statement,
-      isUnsafe := False,
-    }
-    match env.addDecl decl with
-    | Except.ok env => setEnv env
-    | Except.error _ =>
-      throwErrorAt tok m!"Failed to add axiom one_{f.name}.")
-  match m with
-  | .one tok => helper "one_" ``FieldQuantifier.one tok
-  | .lone tok => helper "lone_" ``FieldQuantifier.lone tok
-  | .pfunc tok => logInfoAt tok m!"field {f.name} : {f.type} pfunc"
-  | .func tok => logInfoAt tok m!"field {f.name} : {f.type} func"
-  | .set _ => return
-
-def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := do
-  let fieldType ← liftTermElabM (arrowTypeOfList ([s.name] ++ f.type))
-  logInfoAt f.name_tok m!"opaque {f.name} : {fieldType}"
-  let fieldVal ← liftTermElabM (arrowValueOfList ([s.name] ++ f.type))
-  let fieldDecl := Declaration.opaqueDecl {
-    name := f.name,
-    value := fieldVal,
-    levelParams := [],
-    type := fieldType,
-    isUnsafe := False,
-  }
-  let env ← getEnv
-  match env.addDecl fieldDecl with
-  | Except.ok env => setEnv env
-  | Except.error _ =>
-    throwErrorAt f.name_tok m!"Failed to add field `{f.name}`. This could be because \n * `{f.name}` has already been defined within this scope. Make sure fields across sigs have unique names. \n * The type of `{f.name}` you have tried to define is invalid"
-  f.multiplicity.elab s f
-
-def Sig.elab (s : Sig): CommandElabM Unit := do
-  let env ← getEnv
-  let sigDecl := Declaration.opaqueDecl {
-    name := s.name,
-    value := mkSort levelZero,
-    levelParams := [],
-    type := mkSort levelOne,
-    isUnsafe := False,
-  }
-  logInfoAt s.name_tok m!"opaque {s.name} : Type"
-  match env.addDecl sigDecl with
-  | Except.ok env => setEnv env
-  | Except.error _ =>
-    throwErrorAt s.name_tok m!"Failed to add declaration {s.name}. This could be because {s.name} has already been defined within this scope. "
-
-/--
-We need to elaborate all top-level sigs before all fields can be elaborated,
-so `Sig.lift_and_elab` will elab all Sigs and then all of their fields.
--/
-def Sig.lift_and_elab (sigs : List Sig) : CommandElabM Unit := do
-  sigs.forM Sig.elab
-  sigs.forM (λ s ↦ s.fields.forM (Field.elab s))
-
-mutual
-partial def Formula.elab : Formula → TermElabM Expr
-  | .unop op fmla => do
-    let fmla ← fmla.elab
-    match op with
-    | Formula.UnOp.not => mkAppM ``Not #[fmla]
-  | Formula.binop op fmla_a fmla_b => do
-    let fmla_a ← fmla_a.elab
-    let fmla_b ← fmla_b.elab
-    match op with
-    | Formula.BinOp.and => mkAppM ``And #[fmla_a, fmla_b]
-    | Formula.BinOp.or => mkAppM ``Or #[fmla_a, fmla_b]
-    | Formula.BinOp.implies => mkAppM ``Implies #[fmla_a, fmla_b]
-    | Formula.BinOp.iff => mkAppM ``Iff #[fmla_a, fmla_b]
-  | Formula.implies_else fmla_a fmla_b fmla_c => do
-    let fmla_a ← fmla_a.elab
-    let fmla_b ← fmla_b.elab
-    let fmla_c ← fmla_c.elab
-    mkAppM ``And #[
-      ← mkAppM ``Implies #[fmla_a, fmla_b],
-      ← mkAppM ``Implies #[fmla_a, ← mkAppM ``Not #[fmla_b]]]
-  | Formula.expr_unop op expr => do
-    let expr ← expr.elab
-    match op with
-    | Formula.ExprUnOp.some => mkAppM ``ExprQuantifier.some #[expr]
-    | Formula.ExprUnOp.no => mkAppM ``ExprQuantifier.no #[expr]
-    | Formula.ExprUnOp.lone => mkAppM ``ExprQuantifier.lone #[expr]
-    | Formula.ExprUnOp.one => mkAppM ``ExprQuantifier.one #[expr]
-  | Formula.expr_binop op expr_a expr_b => do
-    let expr_a ← expr_a.elab
-    let expr_b ← expr_b.elab
-    match op with
-    | Formula.ExprBinOp.in => mkAppM ``ExprCmp.subset #[expr_a, expr_b]
-    | Formula.ExprBinOp.eq => mkAppM ``ExprCmp.eq #[expr_a, expr_b]
-    | Formula.ExprBinOp.neq => mkAppM ``Not #[← mkAppM ``ExprCmp.eq #[expr_a, expr_b]]
-  | Formula.quantifier quantification vars fmla => throwUnsupportedSyntax -- TODO!!
-  | Formula.app name args => do
-    let args ← args.mapM Expression.elab
-    mkAppM name args.toArray
-  | Formula.true => mkConst ``True
-  | Formula.false => mkConst ``False
-
-partial def Expression.elab : Expression → TermElabM Expr
-  | Expression.unop op expr => throwUnsupportedSyntax -- TODO!!
-  | Expression.binop op expr_a expr_b => throwUnsupportedSyntax -- TODO!!
-  | Expression.if_then_else fmla expr_a expr_b => throwUnsupportedSyntax -- TODO!!
-  | Expression.set_comprehension vars fmla => throwUnsupportedSyntax -- TODO!!
-  | Expression.app function args => do
-    let function ← function.elab
-    let args ← args.mapM Expression.elab
-    mkAppM' function args.toArray
-  | Expression.literal value => mkConst value
-  | Expression.let id expression body => throwUnsupportedSyntax -- TODO!!
-end
-
-def Predicate.elab (p : Predicate) : CommandElabM Unit := do
-  let env ← getEnv
-  let predDecl := Declaration.defnDecl {
-    name := p.name,
-    levelParams := [],
-    type := mkSort levelZero,
-    hints := ReducibilityHints.opaque,
-    value := ← liftTermElabM p.body.elab,
-    safety := .safe,
-  }
-  match env.addDecl predDecl with
-  | Except.ok env => setEnv env
-  | Except.error _ =>
-    throwError m!"Failed to add predicate `{p.name}`."
-
-@[command_elab forge_program]
-def forgeImpl : CommandElab
-  | `(command| $s:f_program) => do
-    let model ← liftTermElabM (of_syntax s)
-    -- Elaborate all sigs first, this is so sig Types are defined (and lifted) before we try to define any fields, functions or predicates
-    Sig.lift_and_elab model.sigs
-    model.predicates.forM Predicate.elab
   | _ => throwUnsupportedSyntax
 
 end ForgeSyntax

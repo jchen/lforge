@@ -5,6 +5,7 @@ set_option autoImplicit false
 opaque Pet : Type
 
 opaque Person : Type
+instance instSingletonPerson : Singleton Person (Set Person) := ⟨Set.singleton⟩
 
 opaque owner : Pet → Person → Prop
 axiom one_owner : ∀ pet : Pet, ∃! person : Person, owner pet person
@@ -16,7 +17,10 @@ opaque friends : Person → Person → Prop
 def owner_owns_pet : Prop :=
   ∀ p : Person, ∀ pet : Pet, pets p pet ↔ owner pet p
 
-#check true
+#check ∀ p : Person, ∀ pet : Pet, Set.union (Set.singleton p) (owner pet)
+#check ∀ p : Person, ∀ pet : Pet, Set.union (Set.singleton p) (owner pet)
+
+#check ({1, 2, 3} : Set ℕ) = {1, 2, 3}
 
 def one_friend_owns_one_pet (p : Person) : Prop :=
   ∃! fs : Person, friends p fs ∧ ∃! pet : Pet, pets fs pet
@@ -36,3 +40,12 @@ def check : ∀ p : Person, one_friend_owns_one_pet p → some_friend_owns_a_pet
       with ⟨p1, left, right⟩
     apply Exists.intro p1
     exact And.intro left (ExistsUnique.exists right)
+
+set_option pp.all true
+
+#check ∃ p : Person, ∀ pet : Pet, owner pet p
+#reduce ∃ p : Person, ∃ pet : Pet, owner pet p
+
+#print Lean.toExpr
+
+#check Int

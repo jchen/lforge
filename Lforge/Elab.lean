@@ -261,3 +261,13 @@ def forgeImpl : CommandElab
   | _ => throwUnsupportedSyntax
 
 end ForgeSyntax
+
+/-
+TODOs / Note-to-self before Thanksgiving:
+ - Most of this is partially implemented. Some things that remain are like `join` and quantifications.
+ - Quantification follow the syntax of `all`, it eneds to bind some fvars and then use them in the body.
+ - Add more static checking. Particularly in quantifications to evalyate the type of something.
+ - If a sig appears in any body, we might want to add a `.u` that represents the universe of that sig. Like `Person.u : Person → Prop`.
+ - By default, everything is a relation. But this makes things like `a in b` difficult if `a` is a singleton. Singletons are created from quantifications, as parameters of functions and/or predicates, or from `one sig`s. We want to add special cases for singletons - for example `a.b` for singleton a gives `b a` if `b` is a relation. So is `a[b]` or `a in b`. We should dispatch on what syntax to specifically generate based on whether we can turn `a` into a singleton.
+ - Better type checking and static analysis, along with better linting.
+-/

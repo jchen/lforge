@@ -10,7 +10,7 @@ Sigs contain fields, predicates contain formulas, and functions contain expressi
 namespace ForgeSyntax
 
 /-- A `Symbol` is a Lean name representing sigs, predicates, and functions in Forge. -/
-def Symbol := Name deriving Repr, Inhabited, ToMessageData
+def Symbol := Name deriving Repr, Inhabited, ToMessageData, DecidableEq
 
 /--
 A `Sig.Multiplicity` corresponds to the annotation of the multiplicity of a sig. For example, in
@@ -414,41 +414,41 @@ mutual
   -/
   inductive Formula where
     /- Operators -/
-    | unop (op : Formula.UnOp) (fmla : Formula)
-    | binop (op : Formula.BinOp) (fmla_a fmla_b : Formula)
+    | unop (op : Formula.UnOp) (fmla : Formula) (tok : Syntax)
+    | binop (op : Formula.BinOp) (fmla_a fmla_b : Formula) (tok : Syntax)
     -- if [fmla_a], then [fmla_b], otherwise [fmla_c]
-    | implies_else (fmla_a fmla_b fmla_c : Formula)
+    | implies_else (fmla_a fmla_b fmla_c : Formula) (tok : Syntax)
 
     /- Cardinality and membership -/
-    | expr_unop (op : Formula.ExprUnOp) (expr : Expression)
-    | expr_binop (op : Formula.ExprBinOp) (expr_a expr_b : Expression)
+    | expr_unop (op : Formula.ExprUnOp) (expr : Expression) (tok : Syntax)
+    | expr_binop (op : Formula.ExprBinOp) (expr_a expr_b : Expression) (tok : Syntax)
 
-    /- Quantifiers
-       Quantifies [var](s) over [expr](s) and binds [var](s) in [fmla] -/
+    /-- Quantifiers
+       Quantifies `var` over `expr` and binds `var` in `fmla` -/
     -- Exists and satisfies property <fmla>
-    | quantifier (quantification : Formula.Quantifier) (vars : List (Symbol × Expression)) (fmla : Formula)
+    | quantifier (quantification : Formula.Quantifier) (vars : List (Symbol × Expression)) (fmla : Formula) (tok : Syntax)
 
-    /- Predicate Applications -/
-    | app (pred_name : Symbol) (args : List Expression)
+    /-- Predicate applications -/
+    | app (pred_name : Symbol) (args : List Expression) (tok : Syntax)
     | true
     | false
     deriving Repr, Inhabited
 
   inductive Expression where
-    | unop (op : Expression.UnOp) (expr : Expression)
-    | binop (op : Expression.BinOp) (expr_a expr_b : Expression)
-    -- if [fmla], then [expr_a], otherwise [expr_b]
-    | if_then_else (fmla : Formula) (expr_a expr_b : Expression)
+    | unop (op : Expression.UnOp) (expr : Expression) (tok : Syntax)
+    | binop (op : Expression.BinOp) (expr_a expr_b : Expression) (tok : Syntax)
+    /-- if `fmla`, then `expr_a`, otherwise `expr_b` -/
+    | if_then_else (fmla : Formula) (expr_a expr_b : Expression) (tok : Syntax)
 
-    -- { [var] | [fmla] }, binds [var](s) in fmla and includes in set if true
-    | set_comprehension (vars : List (Symbol × Expression)) (fmla : Formula)
+    /-- { [var] | [fmla] }, binds [var] in fmla and includes in set if true -/
+    | set_comprehension (vars : List (Symbol × Expression)) (fmla : Formula) (tok : Syntax)
 
-    -- Function application, also includes sugar for join.
-    | app (function : Expression) (args : List Expression)
-    -- a literal value, can be sig, relation, or top-level expr (univ, none, iden, etc.)
-    | literal (value : Symbol)
+    /-- Function application, also includes sugar for join. -/
+    | app (function : Expression) (args : List Expression) (tok : Syntax)
+    /-- a literal value, can be sig, relation, or top-level expr (univ, none, iden, etc.) -/
+    | literal (value : Symbol) (tok : Syntax)
 
-    | let (id : Symbol) (expression : Expression) (body : Expression)
+    | let (id : Symbol) (expression : Expression) (body : Expression) (tok : Syntax)
     deriving Repr, Inhabited
 end
 
@@ -462,45 +462,47 @@ mutual
     | `(f_args| $args:f_arg,* ) => args.getElems.toList.mapM Arguments.one_of_syntax
     | _ => throwUnsupportedSyntax
 
-  partial def Formula.of_syntax : TSyntax `f_fmla → MetaM Formula
+  partial def Formula.of_syntax (stx : TSyntax `f_fmla) : MetaM Formula :=
+    match stx with
     | `(f_fmla| $unop:f_fmla_unop $fmla:f_fmla) =>
-      return Formula.unop (← Formula.UnOp.of_syntax unop) (← Formula.of_syntax fmla)
+      return Formula.unop (← Formula.UnOp.of_syntax unop) (← Formula.of_syntax fmla) stx
     | `(f_fmla| $fmla_a:f_fmla $binop:f_fmla_binop $fmla_b:f_fmla) =>
-      return Formula.binop (← Formula.BinOp.of_syntax binop) (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b)
+      return Formula.binop (← Formula.BinOp.of_syntax binop) (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) stx
     | `(f_fmla| $fmla_a:f_fmla => $fmla_b:f_fmla else $fmla_c:f_fmla)
     | `(f_fmla| $fmla_a:f_fmla implies $fmla_b:f_fmla else $fmla_c:f_fmla) =>
-      return Formula.implies_else (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) (← Formula.of_syntax fmla_c)
+      return Formula.implies_else (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) (← Formula.of_syntax fmla_c) stx
     | `(f_fmla| $unop:f_fmla_of_expr_unop $expr_b:f_expr) =>
-      return Formula.expr_unop (← Formula.ExprUnOp.of_syntax unop) (← Expression.of_syntax expr_b)
+      return Formula.expr_unop (← Formula.ExprUnOp.of_syntax unop) (← Expression.of_syntax expr_b) stx
     | `(f_fmla| $expr_a:f_expr $binop:f_fmla_of_expr_binop $expr_b:f_expr) =>
-      return Formula.expr_binop (← Formula.ExprBinOp.of_syntax binop) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b)
+      return Formula.expr_binop (← Formula.ExprBinOp.of_syntax binop) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
     | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | { $fmla:f_fmla })
     | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | $fmla:f_fmla ) => do
       let quantification ← Formula.Quantifier.of_syntax quantifier
-      return Formula.quantifier quantification (← Arguments.of_syntax args) (← Formula.of_syntax fmla)
+      return Formula.quantifier quantification (← Arguments.of_syntax args) (← Formula.of_syntax fmla) stx
     -- single predicate
     | `(f_fmla| $name:ident ) => do
-      return Formula.app name.getId []
+      return Formula.app name.getId [] stx
     | `(f_fmla| $name:ident [ $expr,* ]) => do
-      return Formula.app name.getId (← expr.getElems.toList.mapM Expression.of_syntax)
+      return Formula.app name.getId (← expr.getElems.toList.mapM Expression.of_syntax) stx
     | `(f_fmla| true) => return Formula.true
     | `(f_fmla| false) => return Formula.false
     | _ => throwUnsupportedSyntax
 
-  partial def Expression.of_syntax : TSyntax `f_expr → MetaM Expression
+  partial def Expression.of_syntax (stx : TSyntax `f_expr) : MetaM Expression :=
+    match stx with
     | `(f_expr| $unop:f_expr_unop $expr:f_expr) =>
-      return Expression.unop (← Expression.UnOp.of_syntax unop) (← Expression.of_syntax expr)
+      return Expression.unop (← Expression.UnOp.of_syntax unop) (← Expression.of_syntax expr) stx
     | `(f_expr| $expr_a:f_expr $binop:f_expr_binop $expr_b:f_expr) =>
-      return Expression.binop (← Expression.BinOp.of_syntax binop) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b)
+      return Expression.binop (← Expression.BinOp.of_syntax binop) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
     | `(f_expr| if $fmla:f_fmla then $expr_a:f_expr else $expr_b:f_expr) =>
-      return Expression.if_then_else (← Formula.of_syntax fmla) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b)
+      return Expression.if_then_else (← Formula.of_syntax fmla) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
     | `(f_expr| { $args:f_args | $fmla:f_fmla }) =>
-      return Expression.set_comprehension (← Arguments.of_syntax args) (← Formula.of_syntax fmla)
+      return Expression.set_comprehension (← Arguments.of_syntax args) (← Formula.of_syntax fmla) stx
     | `(f_expr| $expr_a:f_expr [ $expr,* ]) =>
-      return Expression.app (← Expression.of_syntax expr_a) (← expr.getElems.toList.mapM Expression.of_syntax)
-    | `(f_expr| $name:ident) => return Expression.literal name.getId
+      return Expression.app (← Expression.of_syntax expr_a) (← expr.getElems.toList.mapM Expression.of_syntax) stx
+    | `(f_expr| $name:ident) => return Expression.literal name.getId stx
     | `(f_expr| let $id:ident = $expr_a:f_expr | $expr_b:f_expr) =>
-      return Expression.let id.getId (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b)
+      return Expression.let id.getId (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
     | _ => throwUnsupportedSyntax
 end
 
@@ -516,18 +518,21 @@ declare_syntax_cat f_pred_args
 syntax "[" f_args "]" : f_pred_args
 syntax "pred" ident f_pred_args ? "{" f_fmla+ "}" : f_pred
 
-def Predicate.of_syntax : TSyntax `f_pred → MetaM Predicate
+def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
+  match stx with
   | `(f_pred| pred $name:ident { $fmla:f_fmla* }) => do
     let args := []
     let body ← fmla
       |> Array.toList
-      |> List.foldrM (λ elt acc ↦ do return .binop .and (← Formula.of_syntax elt) acc) Formula.true
+      |> List.foldrM (λ elt acc ↦ do
+        return .binop .and (← Formula.of_syntax elt) acc stx) Formula.true
     return { name := name.getId, name_tok := name, args := args, body := body }
   | `(f_pred| pred $name:ident [ $args:f_args ] { $fmla:f_fmla* }) => do
     let args := Arguments.of_syntax args
     let body ← fmla
       |> Array.toList
-      |> List.foldrM (λ elt acc ↦ do return .binop .and (← Formula.of_syntax elt) acc) Formula.true
+      |> List.foldrM (λ elt acc ↦ do
+        return .binop .and (← Formula.of_syntax elt) acc stx) Formula.true
     return { name := name.getId, name_tok := name, args := ← args, body := body }
   | _ => throwUnsupportedSyntax
 

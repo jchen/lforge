@@ -4,17 +4,6 @@ open Lean Elab Command Term Meta
 
 set_option forge.hints true
 
-#check 2 + 2 = 4
-#reduce (λ x ↦ x + 2) = (λ x ↦ x + 3)
-
--- axiom lone_parent : True
-
-sig TreeNode {
-    parent: lone TreeNode,
-    children: one TreeNode,
-    number: set Int -> TreeNode
-}
-
 sig Pet {
     owner: one Person
 }
@@ -24,15 +13,24 @@ sig Person {
     friends: set Person
 }
 
--- pred ownerOwnsPet {
---     all p: Person | { p in p }
--- }
-
-#check TreeNode
-#check parent
-#check children
-#print lone_parent
+pred ownerOwnsPet {
+    some p: Person, pet: Pet | { pet in p . pets <=> p = pet . owner }
+}
 
 #print ownerOwnsPet
 
-#print p
+-- pred oneFriendOwnsOnePet[p: Person] {
+--     one fs: p . friends | { one fs . pets }
+-- }
+
+-- pred someFriendOwnsAPet[p: Person] {
+--     some fs: p . friends | { some fs . pets }
+-- }
+
+-- fun friendsPets[p: Person]: set Pet {
+--     p . friends . pets
+-- }
+
+#check Exists
+
+#check ∀ a : ℕ × ℕ, a = a

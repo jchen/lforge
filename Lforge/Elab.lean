@@ -11,21 +11,37 @@ register_option forge.hints : Bool := {
   descr := "Provides hints to generated definitions from Forge."
 }
 
+register_option forge.dot_join : Bool := {
+  defValue := Bool.true
+  descr := "Expands use of dots within Forge to represent a 'join' and not a scoping."
+}
+
 -- This allows us to use forge_commands as honest-to-goodness Lean syntax
 syntax (name := forge_program) f_program : command
 
+/--
+Constructs an arrow type from a list, allows for `opaque` definitions.
+-/
 private partial def arrowTypeOfList (types : List Symbol) : TermElabM Expr := do
   match types with
   | [] =>
+    -- Prop
     pure (mkSort levelZero)
+    -- α → β → ... → Prop
   | type :: rest =>
     mkArrow (mkConst type) (← arrowTypeOfList rest)
 
+/--
+Constructs an arrow value from a list (ending in → Prop), allows for `opaque` definitions.
+Just returns α → β → ... → True
+-/
 private partial def arrowValueOfList (types : List Symbol) : TermElabM Expr := do
   match types with
   | [] =>
+    -- Prop
     pure (mkConst `True)
   | type :: rest =>
+    -- α → β → ... → Prop
     pure (.lam .anonymous (mkConst type) (← arrowValueOfList rest) .default)
 
 def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : CommandElabM Unit := do
@@ -127,7 +143,9 @@ partial def Formula.elab (env : HashMap Name Expr) (fmla : Formula) : TermElabM 
     match op with
     | Formula.BinOp.and => mkAppM ``And #[fmla_a, fmla_b]
     | Formula.BinOp.or => mkAppM ``Or #[fmla_a, fmla_b]
-    | Formula.BinOp.implies => mkAppM ``Implies #[fmla_a, fmla_b]
+    | Formula.BinOp.implies =>
+      -- This makes an arrow type implication, is the same as the elaboration for →
+      return mkForall (← MonadQuotation.addMacroScope `a) BinderInfo.default fmla_a fmla_b
     | Formula.BinOp.iff => mkAppM ``Iff #[fmla_a, fmla_b]
   | Formula.implies_else fmla_a fmla_b fmla_c _tok => do
     let fmla_a ← fmla_a.elab env
@@ -216,46 +234,108 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
     | .union
     | .set_difference
     | .intersection
-    | .join => do
+    | .join
+    | .cross => do
       let applied_op := ( match op with
         | .union => ``Union
         | .set_difference => ``SDiff
         | .intersection => ``Inter
         | .join => ``Forge.HJoin.join
-        | _ => unreachable! )
+        | .cross => ``Forge.HCross.cross )
       mkAppM applied_op #[expr_a, expr_b]
-    | .cross => throwError "TODO cross product"
   | Expression.if_then_else fmla expr_a expr_b tok => do
     let fmla ← fmla.elab env
     let expr_a ← expr_a.elab env
     let expr_b ← expr_b.elab env
     mkAppM ``ite #[fmla, expr_a, expr_b]
-  | Expression.set_comprehension vars fmla tok =>
-    throwError "TODO set comprehension"
+  | Expression.set_comprehension vars fmla tok => do
+    -- if vars is [α, β, γ], then constructs α → β → γ → fmla
+    -- Does something similar to forall/exists statement
+    let vars ← vars.mapM (λ v ↦ do
+      let (name, type) := v
+      let v ← type.elab env
+      pure (name, v))
+    withLocalDeclsD
+      (vars.toArray.map λ ⟨name, type⟩ ↦ ⟨name, λ _ ↦ pure type⟩)
+      (λ fvars ↦ do
+        let freed_vars := List.zipWith (λ ⟨name, _⟩ fvar ↦ (name, fvar)) vars fvars.toList
+        let new_env := freed_vars.foldr (λ (v : Name × Expr) (acc : HashMap Name Expr) ↦
+          let (name, fvar_type) := v
+          acc.insert name fvar_type) env
+        let body ← fmla.elab new_env
+        fvars.foldrM (λ (fvar : Expr) (acc : Expr) ↦ do
+          mkLambdaFVars #[fvar] acc) body)
   | Expression.app function args tok => do
     let function ← function.elab env
     let args ← args.mapM $ Expression.elab env
     mkAppM' function args.toArray
   | Expression.literal value tok => do
-    -- checks if value is bound within the environment
-    match (← getEnv).find? value with
-    | .some _ => mkConst value
-    | .none => match env.find? value with
-      | .some e => pure e
-      | .none => throwError m!"'{value}' is not defined in scope"
+    /- Here, we do some magic involving splitting up a name to join it.
+       This is so we can use dots in Forge to represent a join, and not a scoping. -/
+    -- Gets the list of all the names, flat if dot_join is disabled
+    let names := ( if (← getOptions).getBool `forge.dot_join then
+        explode_names_over_macro_scopes value |> List.reverse
+      else
+        [value] )
+    -- Resolves all the names to constants, either in lean environment or our own
+    let resolved_names ← names.mapM (λ value ↦ do
+      -- Simple lookup and errors if not found
+      match (← getEnv).find? value with
+      | .some _ => Term.mkConst value
+      | .none =>
+        match env.find? value with
+        | .some e => pure e
+        | .none => throwError m!"'{value}' is not defined in scope")
+    -- Folds over the resolved names, joining them all together
+    resolved_names.tail!.foldr
+      (λ elt acc ↦ do mkAppM ``Forge.HJoin.join #[← acc, elt] ) (pure resolved_names.head!)
+
   | Expression.let id expression body tok => do
     let expression ← expression.elab env
     let body ← body.elab env
     throwError "TODO let elab"
+where
+explode_names (name : Name) : List Name :=
+  match name with
+  | Name.str p s => s :: explode_names p
+  | _ => []
+explode_names_over_macro_scopes (name : Name) : List Name :=
+  if name.hasMacroScopes then
+    let view := extractMacroScopes name
+    let inner_names := explode_names view.name
+    inner_names.map (λ v ↦ { view with name := v }.review)
+  else
+    explode_names name
 end
 
 def Predicate.elab (p : Predicate) : CommandElabM Unit := do
   let env ← getEnv
-  let val ← liftTermElabM $ p.body.elab .empty
+  let vars ← liftTermElabM $ p.args.mapM (λ v ↦ do
+    let (name, type) := v
+    let v ← type.elab .empty
+    pure (name, v))
+  let val ← liftTermElabM $ (
+    withLocalDeclsD
+      (vars.toArray.map λ ⟨name, type⟩ ↦ ⟨name, λ _ ↦ pure type⟩)
+      (λ fvars ↦ do
+        let freed_vars := List.zipWith (λ ⟨name, _⟩ fvar ↦ (name, fvar)) vars fvars.toList
+        let new_env := freed_vars.foldr (λ (v : Name × Expr) (acc : HashMap Name Expr) ↦
+          let (name, fvar_type) := v
+          acc.insert name fvar_type) .empty
+        let body ← p.body.elab new_env
+        fvars.foldrM (λ (fvar : Expr) (acc : Expr) ↦ do
+          -- TODO: Get names in printed type statement
+          mkLambdaFVars #[fvar] acc) body)
+    )
+  let type_symbol_list ← p.args.mapM (λ v ↦ match v.2 with
+    | .literal l _tok => return l
+    -- TODO: this is a bit janky
+    | _ => throwError "Expected types in predicate definition, got expressions instead." )
+  let type ← liftTermElabM $ arrowTypeOfList type_symbol_list
   let predDecl := Declaration.defnDecl {
     name := p.name,
     levelParams := [],
-    type := mkSort levelZero,
+    type := type,
     hints := ReducibilityHints.opaque,
     value := val,
     safety := .safe,
@@ -264,7 +344,8 @@ def Predicate.elab (p : Predicate) : CommandElabM Unit := do
   | Except.ok env => do
     setEnv env
     if (← getOptions).getBool `forge.hints then
-      logInfoAt p.name_tok m!"def {p.name} : Prop"
+      let type_string := type_symbol_list.foldr (λ (s : Symbol) (acc : String) ↦ s.toString ++ " → " ++ acc) "Prop"
+      logInfoAt p.name_tok m!"def {p.name} : {type_string}"
   | Except.error ex =>
     throwErrorAt p.name_tok ex.toMessageData (← getOptions)
 
@@ -290,7 +371,8 @@ def forgeImpl : CommandElab
     let model ← liftTermElabM $ ForgeModel.of_syntax s
     -- Elaborate all sigs first, this is so sig Types are defined (and lifted) before we try to define any fields, functions or predicates
     Sig.lift_and_elab_multiple model.sigs
-    model.predicates.forM Predicate.elab
+    model.predicates.reverse.forM Predicate.elab
+    model.functions.reverse.forM Function.elab
   | _ => throwUnsupportedSyntax
 
 end ForgeSyntax

@@ -142,8 +142,8 @@ structure Sig where
   deriving Repr, Inhabited
 
 declare_syntax_cat f_sig
-syntax f_sig_multiplicity ? "sig" ident "{" f_field,+ "}" : f_sig
-syntax f_sig_multiplicity ? "sig" ident "extends" ident "{" f_field,+ "}" : f_sig
+syntax f_sig_multiplicity ? "sig" ident "{" f_field,* "}" : f_sig
+syntax f_sig_multiplicity ? "sig" ident "extends" ident "{" f_field,* "}" : f_sig
 
 def Sig.of_syntax : TSyntax `f_sig → MetaM Sig
   | `(f_sig| $quantifier:f_sig_multiplicity ? sig $name:ident { $fields:f_field,* }) => do
@@ -168,7 +168,7 @@ declare_syntax_cat f_args
 declare_syntax_cat f_arg
 
 -- argument
-syntax ident ":" f_expr : f_arg
+syntax ident,+ ":" f_expr : f_arg
 -- arguments
 syntax f_arg,* : f_args
 
@@ -344,6 +344,10 @@ syntax "false" : f_fmla
 syntax ident "[" f_expr,* "]" : f_fmla
 syntax ident : f_fmla
 
+-- parens
+syntax "(" f_fmla ")" : f_fmla
+syntax "{" f_fmla "}" : f_fmla
+
 end Formula
 
 namespace Expression
@@ -405,6 +409,8 @@ syntax f_expr "[" f_expr,* "]" : f_expr
 syntax ident : f_expr
 -- let
 syntax "let" ident "=" f_expr "|" f_expr : f_expr
+-- parens
+syntax "(" f_expr ")" : f_expr
 
 end Expression
 
@@ -453,13 +459,15 @@ mutual
 end
 
 mutual
-  partial def Arguments.one_of_syntax : TSyntax `f_arg → MetaM (Symbol × Expression)
-    | `(f_arg| $name:ident : $expr:f_expr) =>
-      return (name.getId, ← Expression.of_syntax expr)
+  partial def Arguments.one_of_syntax : TSyntax `f_arg → MetaM (List (Symbol × Expression))
+    | `(f_arg| $names:ident,* : $expr:f_expr) =>
+      names.getElems.toList.mapM (λ name ↦ do pure (name.getId, ← Expression.of_syntax expr))
     | _ => throwUnsupportedSyntax
 
   partial def Arguments.of_syntax : TSyntax `f_args → MetaM (List (Symbol × Expression))
-    | `(f_args| $args:f_arg,* ) => args.getElems.toList.mapM Arguments.one_of_syntax
+    | `(f_args| $args:f_arg,* ) => do
+      let lists ← args.getElems.toList.mapM Arguments.one_of_syntax
+      return lists.join
     | _ => throwUnsupportedSyntax
 
   partial def Formula.of_syntax (stx : TSyntax `f_fmla) : MetaM Formula :=
@@ -484,6 +492,8 @@ mutual
       return Formula.app name.getId [] stx
     | `(f_fmla| $name:ident [ $expr,* ]) => do
       return Formula.app name.getId (← expr.getElems.toList.mapM Expression.of_syntax) stx
+    | `(f_fmla| ( $fmla:f_fmla )) => return (← Formula.of_syntax fmla)
+    | `(f_fmla| { $fmla:f_fmla }) => return (← Formula.of_syntax fmla)
     | `(f_fmla| true) => return Formula.true
     | `(f_fmla| false) => return Formula.false
     | _ => throwUnsupportedSyntax
@@ -503,6 +513,7 @@ mutual
     | `(f_expr| $name:ident) => return Expression.literal name.getId stx
     | `(f_expr| let $id:ident = $expr_a:f_expr | $expr_b:f_expr) =>
       return Expression.let id.getId (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+    | `(f_expr| ( $expr:f_expr )) => return (← Expression.of_syntax expr)
     | _ => throwUnsupportedSyntax
 end
 
@@ -516,24 +527,32 @@ structure Predicate where
 declare_syntax_cat f_pred
 declare_syntax_cat f_pred_args
 syntax "[" f_args "]" : f_pred_args
-syntax "pred" ident f_pred_args ? "{" f_fmla+ "}" : f_pred
+syntax "pred" ident f_pred_args ? "{" f_fmla* "}" : f_pred
 
 def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
   match stx with
   | `(f_pred| pred $name:ident { $fmla:f_fmla* }) => do
     let args := []
-    let body ← fmla
-      |> Array.toList
-      |> List.foldrM (λ elt acc ↦ do
-        return .binop .and (← Formula.of_syntax elt) acc stx) Formula.true
+    -- Join fmla list with `ands`. No base case, if empty, then true. Else one element.
+    let body ← ( match fmla.toList with
+    | [] => return Formula.true
+    | fmla => do
+      let fmlas_rev := fmla.reverse
+      let init ← Formula.of_syntax fmlas_rev.head!
+      fmlas_rev.tail!.foldlM (λ acc elt ↦ do
+        return .binop .and (← Formula.of_syntax elt) acc stx) init )
     return { name := name.getId, name_tok := name, args := args, body := body }
   | `(f_pred| pred $name:ident [ $args:f_args ] { $fmla:f_fmla* }) => do
-    let args := Arguments.of_syntax args
-    let body ← fmla
-      |> Array.toList
-      |> List.foldrM (λ elt acc ↦ do
-        return .binop .and (← Formula.of_syntax elt) acc stx) Formula.true
-    return { name := name.getId, name_tok := name, args := ← args, body := body }
+    let args ← Arguments.of_syntax args
+    -- Join fmla list with `ands`. No base case, if empty, then true. Else one element.
+    let body ← ( match fmla.toList with
+    | [] => return Formula.true
+    | fmla => do
+      let fmlas_rev := fmla.reverse
+      let init ← Formula.of_syntax fmlas_rev.head!
+      fmlas_rev.tail!.foldlM (λ acc elt ↦ do
+        return .binop .and (← Formula.of_syntax elt) acc stx) init )
+    return { name := name.getId, name_tok := name, args := args, body := body }
   | _ => throwUnsupportedSyntax
 
 structure Function where
@@ -557,6 +576,7 @@ def Function.of_syntax : TSyntax `f_fun → MetaM Function
   | _ => throwUnsupportedSyntax
 
 structure ForgeModel where
+  -- All in reverse order!
   sigs : List Sig
   predicates : List Predicate
   functions : List Function

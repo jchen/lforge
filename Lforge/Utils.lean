@@ -67,75 +67,8 @@ def transpose {α β : Type} : (α × β) → (β × α) := Prod.swap
 
 set_option autoImplicit true
 
-namespace Forge
-
-/- In -/
-class HIn (α : Type) (β : Type) :=
-  (subset : α → β → Prop)
-
-infix:60 " ⊂ᶠ " => HIn.subset
-
-instance : HIn α (Set α) where
-  subset := fun elt s ↦ s elt
-
-instance : HIn α (α → Prop) where
-  subset := fun elt s ↦ s elt
-
-instance [HasSubset α] : HIn (Set α) (Set α) where
-  subset := HasSubset.Subset
-
-/- Eq -/
-class HEq (α : Type) (β : Type) :=
-  (eq : α → β → Prop)
-
-infix:60 " =ᶠ " => HEq.eq
-
-instance [HEq α β] : HEq β α where
-  eq := fun s1 s2 ↦ HEq.eq s2 s1
-
-instance : HEq α α where
-  eq := Eq
-
-instance : HEq α (Set α) where
-  eq := fun s1 s2 ↦ s2 = Set.singleton s1
-
-instance : HEq α (α → Prop) where
-  eq := fun s1 s2 ↦ s2 = Set.singleton s1
-
-instance : HEq (Set α) (Set α) where
-  eq := Eq
-
-instance {α : Type} : HEq (α → Prop) (α → Prop) where
-  eq := Eq
-
-/- Transpose -/
-class HTranspose (α : Type) (γ : outParam Type) :=
-  (transpose : α → γ)
-
-notation:80 lhs:81 "ᵀ" => HTranspose.transpose lhs
-
-instance : HTranspose (α × β) (β × α) where
-  transpose := Prod.swap
-
-instance {α β : Type} : HTranspose (α → β → Prop) (β → α → Prop) where
-  transpose := Relation.Transpose
-
-/- Join -/
-
-class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
-  (join : α → β → γ)
-
-infix:50 " ⋈ " => HJoin.join
-
-instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
-  join := fun a g b ↦ g a b
-
-instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
-  join := fun f g b ↦ ∃ a : α, f a ∧ g a b
-
-end Forge
-
 /- Coercions -/
+-- We do all these first because we use these coercions later below
 /- Singletons -/
 instance : Coe α (α → Prop) where
   coe := Eq
@@ -174,3 +107,91 @@ instance : Coe (α → Set (β × γ)) (α → β → γ → Prop) where
 
 instance : Coe (α → Set (β × γ × δ)) (α → β → γ → δ → Prop) where
   coe := fun r ↦ fun a b c d ↦ (b, c, d) ∈ r a
+
+namespace Forge
+
+/- In -/
+class HIn (α : Type) (β : Type) :=
+  (subset : α → β → Prop)
+
+infix:60 " ⊂ᶠ " => HIn.subset
+
+instance : HIn α (Set α) where
+  subset := fun elt s ↦ s elt
+
+instance : HIn α (α → Prop) where
+  subset := fun elt s ↦ s elt
+
+instance [HasSubset α] : HIn (Set α) (Set α) where
+  subset := HasSubset.Subset
+
+/- Eq -/
+class HEq (α : Type) (β : Type) :=
+  (eq : α → β → Prop)
+
+infix:60 " =ᶠ " => HEq.eq
+
+@[reducible] instance [HEq α β] : HEq β α where
+  eq := fun s1 s2 ↦ HEq.eq s2 s1
+
+@[reducible] instance : HEq α α where
+  eq := Eq
+
+@[reducible] instance : HEq α (Set α) where
+  eq := fun s1 s2 ↦ s2 = Set.singleton s1
+
+@[reducible] instance : HEq α (α → Prop) where
+  eq := fun s1 s2 ↦ s2 = Set.singleton s1
+
+@[reducible] instance : HEq (Set α) (Set α) where
+  eq := Eq
+
+@[reducible] instance {α : Type} : HEq (α → Prop) (α → Prop) where
+  eq := Eq
+
+/- Transpose -/
+class HTranspose (α : Type) (γ : outParam Type) :=
+  (transpose : α → γ)
+
+notation:80 lhs:81 "ᵀ" => HTranspose.transpose lhs
+
+instance : HTranspose (α × β) (β × α) where
+  transpose := Prod.swap
+
+instance {α β : Type} : HTranspose (α → β → Prop) (β → α → Prop) where
+  transpose := Relation.Transpose
+
+/- Join -/
+
+class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
+  (join : α → β → γ)
+
+infix:50 " ⋈ " => HJoin.join
+
+instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
+  join := fun a g b ↦ g a b
+
+instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
+  join := fun f g b ↦ ∃ a : α, f a ∧ g a b
+
+/- Cross -/
+
+class HCross (α : Type) (β : Type) (γ : outParam Type) :=
+  (cross : α → β → γ)
+
+infix:50 " ×ᶠ " => HCross.cross
+
+instance {α β : Type} : HCross α β (α → β → Prop) where
+  cross := fun a b ↦ (a, b)
+
+instance {α β : Type} : HCross (α → Prop) (β → Prop) (α → β → Prop) where
+  cross := fun f g a b ↦ f a ∧ g b
+
+-- TODO: Cross with other arities?
+
+-- Binops
+
+instance {α β : Type} : Union (α → β → Prop) where
+  union := fun f g ↦ fun a b ↦ f a b ∨ g a b
+
+end Forge

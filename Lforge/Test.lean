@@ -30,7 +30,3 @@ pred ownerOwnsPet {
 -- fun friendsPets[p: Person]: set Pet {
 --     p . friends . pets
 -- }
-
-#check Exists
-
-#check ∀ a : ℕ × ℕ, a = a

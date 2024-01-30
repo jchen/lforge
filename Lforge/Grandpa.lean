@@ -1,14 +1,11 @@
-import Lean
-import Lforge.Elab
-open Lean Elab Command Term Meta
+import Lforge
 
-set_option forge.hints true
-set_option forge.dot_join true
+#lang forge
 
 sig Person {
-    parent1 : lone Person,
-    parent2 : lone Person,
-    spouse  : lone Person
+    parent1: lone Person,
+    parent2: lone Person,
+    spouse: lone Person
 }
 
 pred isNotRelated[x: Person, y: Person] {
@@ -39,16 +36,20 @@ pred FamilyFact {
     }
 }
 
-#print FamilyFact
-
-theorem proof : FamilyFact := by
-  rw [FamilyFact]
-  sorry
-  done
-
 pred ownGrandparent {
     some p, f, w, d: Person |
     isParent[d, w] and isParent[p, f] and p.spouse = w and f.spouse = d
 }
 
+#print FamilyFact
 #print ownGrandparent
+
+theorem proof1 : FamilyFact := by
+  rw [FamilyFact]
+  sorry
+  done
+
+theorem proof2 : ownGrandparent := by
+  rw [ownGrandparent]
+  sorry
+  done

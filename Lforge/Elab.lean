@@ -60,7 +60,7 @@ def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : Com
     }
     match env.addDecl decl with
     | Except.ok env => do
-      if (← getOptions).getBool `forge.hints then
+      if (← getOptions).getBool `forge.hints .true then
         logInfoAt tok m!"axiom {pre}{f.name} : {statement}"
       setEnv env
     | Except.error ex =>
@@ -92,7 +92,7 @@ def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := do
   let env ← getEnv
   match env.addDecl fieldDecl with
   | Except.ok env =>
-    if (← getOptions).getBool `forge.hints then
+    if (← getOptions).getBool `forge.hints .true then
       logInfoAt f.name_tok m!"opaque {f.name} : {fieldType}"
     setEnv env
   | Except.error ex =>
@@ -115,7 +115,7 @@ def Sig.elab (s : Sig): CommandElabM Unit := do
   }
   match env.addDecl sigDecl with
   | Except.ok env =>
-    if (← getOptions).getBool `forge.hints then
+    if (← getOptions).getBool `forge.hints .true then
       logInfoAt s.name_tok m!"opaque {s.name} : Type"
     setEnv env
   | Except.error ex =>
@@ -214,7 +214,7 @@ partial def Formula.elab (env : HashMap Name Expr) (fmla : Formula) : TermElabM 
 
 partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : TermElabM Expr :=
   match expr with
-  | Expression.unop op expr tok => do
+  | Expression.unop op expr _tok => do
     let expr ← expr.elab env
     match op with
     | .transpose =>
@@ -227,7 +227,7 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
         | .reflexive_transitive_closure => ``Relation.ReflTransGen
         | _ => unreachable!)
       mkAppM applied_op #[expr])
-  | Expression.binop op expr_a expr_b tok => do
+  | Expression.binop op expr_a expr_b _tok => do
     let expr_a ← expr_a.elab env
     let expr_b ← expr_b.elab env
     match op with
@@ -243,12 +243,12 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
         | .join => ``Forge.HJoin.join
         | .cross => ``Forge.HCross.cross )
       mkAppM applied_op #[expr_a, expr_b]
-  | Expression.if_then_else fmla expr_a expr_b tok => do
+  | Expression.if_then_else fmla expr_a expr_b _tok => do
     let fmla ← fmla.elab env
     let expr_a ← expr_a.elab env
     let expr_b ← expr_b.elab env
     mkAppM ``ite #[fmla, expr_a, expr_b]
-  | Expression.set_comprehension vars fmla tok => do
+  | Expression.set_comprehension vars fmla _tok => do
     -- if vars is [α, β, γ], then constructs α → β → γ → fmla
     -- Does something similar to forall/exists statement
     let vars ← vars.mapM (λ v ↦ do
@@ -265,7 +265,7 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
         let body ← fmla.elab new_env
         fvars.foldrM (λ (fvar : Expr) (acc : Expr) ↦ do
           mkLambdaFVars #[fvar] acc) body)
-  | Expression.app function args tok => do
+  | Expression.app function args _tok => do
     let function ← function.elab env
     let args ← args.mapM $ Expression.elab env
     mkAppM' function args.toArray
@@ -273,7 +273,8 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
     /- Here, we do some magic involving splitting up a name to join it.
        This is so we can use dots in Forge to represent a join, and not a scoping. -/
     -- Gets the list of all the names, flat if dot_join is disabled
-    let names := ( if (← getOptions).getBool `forge.dot_join then
+    -- TODO: make this smarter! If it can resolve the nested type doesn't explode!
+    let names := ( if (← getOptions).getBool `forge.dot_join .true then
         explode_names_over_macro_scopes value |> List.reverse
       else
         [value] )
@@ -285,12 +286,12 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
       | .none =>
         match env.find? value with
         | .some e => pure e
-        | .none => throwError m!"'{value}' is not defined in scope")
+        | .none => throwErrorAt tok m!"'{value}' is not defined in scope")
     -- Folds over the resolved names, joining them all together
     resolved_names.tail!.foldr
       (λ elt acc ↦ do mkAppM ``Forge.HJoin.join #[← acc, elt] ) (pure resolved_names.head!)
 
-  | Expression.let id expression body tok => do
+  | Expression.let _id expression body _tok => do
     let expression ← expression.elab env
     let body ← body.elab env
     throwError "TODO let elab"
@@ -343,7 +344,7 @@ def Predicate.elab (p : Predicate) : CommandElabM Unit := do
   match env.addDecl predDecl with
   | Except.ok env => do
     setEnv env
-    if (← getOptions).getBool `forge.hints then
+    if (← getOptions).getBool `forge.hints .true then
       let type_string := type_symbol_list.foldr (λ (s : Symbol) (acc : String) ↦ s.toString ++ " → " ++ acc) "Prop"
       logInfoAt p.name_tok m!"def {p.name} : {type_string}"
   | Except.error ex =>

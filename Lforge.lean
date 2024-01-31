@@ -1,4 +1,5 @@
 import Lforge.Elab
+import Lforge.Utils
 import Lean
 
 open Lean Elab Command Term Meta

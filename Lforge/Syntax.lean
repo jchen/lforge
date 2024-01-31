@@ -567,6 +567,7 @@ declare_syntax_cat f_fun
 
 syntax "fun" ident "[" f_args "]" ":" (f_field_multiplicity)? f_expr "{" f_expr "}" : f_fun
 
+-- TODO: Functions are not working
 def Function.of_syntax : TSyntax `f_fun → MetaM Function
   | `(f_fun| fun $name:ident [ $args:f_args ] : $_? $result_type:f_expr { $expr:f_expr }) => do
     let args ← Arguments.of_syntax args

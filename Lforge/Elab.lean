@@ -237,9 +237,9 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
     | .join
     | .cross => do
       let applied_op := ( match op with
-        | .union => ``Union
-        | .set_difference => ``SDiff
-        | .intersection => ``Inter
+        | .union => ``Union.union
+        | .set_difference => ``SDiff.sdiff
+        | .intersection => ``Inter.inter
         | .join => ``Forge.HJoin.join
         | .cross => ``Forge.HCross.cross )
       mkAppM applied_op #[expr_a, expr_b]
@@ -290,7 +290,6 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
     -- Folds over the resolved names, joining them all together
     resolved_names.tail!.foldr
       (λ elt acc ↦ do mkAppM ``Forge.HJoin.join #[← acc, elt] ) (pure resolved_names.head!)
-
   | Expression.let _id expression body _tok => do
     let expression ← expression.elab env
     let body ← body.elab env

@@ -35,10 +35,15 @@ opaque Grad : Type
 opaque IsSpecialGrad : Grad → Prop
 def SpecialGrad : Type :=
   { s : Grad // IsSpecialGrad s }
+axiom special_grad_of_grad : Grad → SpecialGrad
 
-axiom one_specialgrad : one_sig SpecialGrad
+
+-- axiom one_specialgrad : one_sig SpecialGrad
 
 def Student : Type := Undergrad ⊕ Grad
+
+theorem a : Coe Grad SpecialGrad := by
+  done
 
 -- opaque Student : Type
 

@@ -40,5 +40,5 @@ pred allReachable {
 }
 
 test expect {
-    { wellFormed  } is theorem
+    { wellFormed } is theorem
 }

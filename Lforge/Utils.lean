@@ -125,6 +125,9 @@ instance : HIn α (α → Prop) where
 instance [HasSubset α] : HIn (Set α) (Set α) where
   subset := HasSubset.Subset
 
+instance {α β : Type} : HIn (α → β → Prop) (α → β → Prop) where
+  subset := fun f g ↦ ∀ a b, f a b → g a b
+
 /- Eq -/
 class HEq (α : Type) (β : Type) :=
   (eq : α → β → Prop)
@@ -193,5 +196,11 @@ instance {α β : Type} : HCross (α → Prop) (β → Prop) (α → β → Prop
 
 instance {α β : Type} : Union (α → β → Prop) where
   union := fun f g ↦ fun a b ↦ f a b ∨ g a b
+
+instance {α β : Type} : Inter (α → β → Prop) where
+  inter := fun f g ↦ fun a b ↦ f a b ∧ g a b
+
+prefix:60 "^" => Relation.TransGen
+prefix:60 "*" => Relation.ReflTransGen
 
 end Forge

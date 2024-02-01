@@ -118,6 +118,22 @@ structure Field where
   deriving Repr, Inhabited
 
 declare_syntax_cat f_field
+/--
+### Fields
+Fields allow us to define relationships between a given `sig`s and other components of our model. Each _field_ in a `sig` has:
+
+- a _**name**_ for the field;
+- a _**multiplicity**_ (`one`, `lone`, `pfunc`, `func`, or, in Relational or Temporal Forge, `set`);
+- a _**type**_ (a `->` separated list of `sig` names).
+
+Here is a sig that defines the a `Person` type with a `bestFriend` field:
+```
+sig Person {
+    bestFriend: lone Person
+}
+```
+The `lone` multiplicity says that the field may contain at most one atom. (Note that this example has yet to express the constraint that everyone has a friend!)
+-/
 syntax ident ":" f_field_multiplicity sepBy1(ident, " -> ") : f_field
 
 def Field.of_syntax : TSyntax `f_field → MetaM Field
@@ -142,8 +158,57 @@ structure Sig where
   deriving Repr, Inhabited
 
 declare_syntax_cat f_sig
-syntax f_sig_multiplicity ? "sig" ident "{" f_field,* "}" : f_sig
-syntax f_sig_multiplicity ? "sig" ident "extends" ident "{" f_field,* "}" : f_sig
+declare_syntax_cat f_sig'
+/--
+### Sigs
+_Sigs_ (short for "signatures") are the basic building block of any model in Forge. They represent the types of the system being modeled. To declare one, use the `sig` keyword.
+
+```
+sig <name> {}
+```
+
+A `sig` can also have one or more _fields_, which define relationships between members of that `sig` other atoms. The definition above has no fields because the braces are empty. In contrast, this `sig` definition would have many fields:
+
+```
+sig <name> {
+    <field>,
+    <field>,
+    ...
+    <field>
+}
+```
+-/
+syntax f_sig' : f_sig
+syntax f_sig_multiplicity ? "sig" ident "{" f_field,* "}" : f_sig'
+
+declare_syntax_cat f_extends
+/--
+Sigs may inherit from other sigs via the `extends` keyword:
+
+```
+sig <name> extends <parent sig name> {
+    <additional fields> ...
+}
+```
+
+Sigs may only have _at most one parent sig_. Moreover, much like how no object can be belong to multiple top-level sigs, no object can belong to more than one immediate child of any sig. That is, any two sigs `A` and `B` will never contain an object in common unless one is a descendent of the other.
+
+**Example:**
+
+```
+sig Cat {
+    favoriteFood: one Food
+}
+sig ActorCat extends Cat {
+    playName: one Play
+}
+sig ProgrammerCat extends Cat {}
+```
+
+This means that any `ProgrammerCat` object is also a `Cat` object, and so will have a `favoriteFood` field. But only `ActorCat`s have the `playName` field. Moreover, any cat may be either an `ActorCat`, `ProgrammerCat`, or neither---but not both.
+-/
+syntax "extends" ident : f_extends
+syntax f_sig_multiplicity ? "sig" ident f_extends "{" f_field,* "}" : f_sig'
 
 def Sig.of_syntax : TSyntax `f_sig → MetaM Sig
   | `(f_sig| $quantifier:f_sig_multiplicity ? sig $name:ident { $fields:f_field,* }) => do
@@ -201,28 +266,45 @@ inductive BinOp where
   | iff
   deriving Repr, Inhabited
 
-declare_syntax_cat f_fmla_binop
-syntax "&&" : f_fmla_binop
-syntax "and" : f_fmla_binop
-syntax "||" : f_fmla_binop
-syntax "or" : f_fmla_binop
-syntax "=>" : f_fmla_binop
-syntax "implies" : f_fmla_binop
-syntax "<=>" : f_fmla_binop
-syntax "iff" : f_fmla_binop
+/--
+`<fmla-a> && <fmla-b>`: **true** when both `<fmla-a>` and `<fmla-b>` evaluate to **true**. Can also be written as `and`. Produces `<fmla-a> ∧ <fmla-b>`.
+-/
+syntax f_fmla "&&" f_fmla : f_fmla
 
-def BinOp.of_syntax : TSyntax `f_fmla_binop → MetaM BinOp
-  | `(f_fmla_binop| &&)
-  | `(f_fmla_binop| and) => return .and
-  | `(f_fmla_binop| ||)
-  | `(f_fmla_binop| or) => return .or
-  | `(f_fmla_binop| =>)
-  | `(f_fmla_binop| implies) => return .implies
-  | `(f_fmla_binop| <=>)
-  | `(f_fmla_binop| iff) => return .iff
-  | _ => throwUnsupportedSyntax
+/--
+`<fmla-a> and <fmla-b>`: **true** when both `<fmla-a>` and `<fmla-b>` evaluate to **true**. Can also be written as `&&`. Produces `<fmla-a> ∧ <fmla-b>`.
+-/
+syntax f_fmla "and" f_fmla : f_fmla
 
-syntax f_fmla f_fmla_binop f_fmla : f_fmla
+/--
+`<fmla-a> || <fmla-b>`: **true** when either `<fmla-a>` or `<fmla-b>` evaluates to **true**. Can also be written as `or`. Produces `<fmla-a> ∨ <fmla-b>`.
+-/
+syntax f_fmla "||" f_fmla : f_fmla
+
+/--
+`<fmla-a> or <fmla-b>`: **true** when either `<fmla-a>` is **true** or `<fmla-b>` evaluates to **true**. Can also be written as `||`. Produces `<fmla-a> ∨ <fmla-b>`.
+-/
+syntax f_fmla "or" f_fmla : f_fmla
+
+/--
+`<fmla-a> => <fmla-b>`: **true** when either `<fmla-a>` evaluates to **false** or `<fmla-b>` evaluates to **true**. Can also be written as `implies`. Produces `<fmla-a> → <fmla-b>`.
+-/
+syntax f_fmla "=>" f_fmla : f_fmla
+
+/--
+`<fmla-a> implies <fmla-b>`: **true** when either `<fmla-a>` evaluates to **false** or `<fmla-b>` evaluates to **true**. Can also be written as `=>`. Produces `<fmla-a> → <fmla-b>`.
+-/
+syntax f_fmla "implies" f_fmla : f_fmla
+
+/--
+`<fmla-a> <=> <fmla-b>`: **true** when `<fmla-a>` evaluates to **true** exactly when `<fmla-b>` evaluates to **true**. Can also be written as `iff`. Produces `<fmla-a> ↔ <fmla-b>`.
+-/
+syntax f_fmla "<=>" f_fmla : f_fmla
+
+/--
+`<fmla-a> iff <fmla-b>`: **true** when `<fmla-a>` evaluates to **true** exactly when `<fmla-b>` evaluates to **true**. Can also be written as `<=>`. Produces `<fmla-a> ↔ <fmla-b>`.
+-/
+syntax f_fmla "iff" f_fmla : f_fmla
 
 /--
 Unary operators on Expressions that produce Formulas.
@@ -240,20 +322,14 @@ inductive ExprUnOp where
   | one
   deriving Repr, Inhabited
 
-declare_syntax_cat f_fmla_of_expr_unop
-syntax "some" : f_fmla_of_expr_unop
-syntax "no" : f_fmla_of_expr_unop
-syntax "lone" : f_fmla_of_expr_unop
-syntax "one" : f_fmla_of_expr_unop
-
-def ExprUnOp.of_syntax : TSyntax `f_fmla_of_expr_unop → MetaM ExprUnOp
-  | `(f_fmla_of_expr_unop| some) => return .some
-  | `(f_fmla_of_expr_unop| no) => return .no
-  | `(f_fmla_of_expr_unop| lone) => return .lone
-  | `(f_fmla_of_expr_unop| one) => return .one
-  | _ => throwUnsupportedSyntax
-
-syntax f_fmla_of_expr_unop f_expr : f_fmla
+/-- `some <expr>`: true when `<expr>` contains **at least one** element -/
+syntax "some" f_expr : f_fmla
+/-- `no <expr>`: true when `<expr>` is **empty** -/
+syntax "no" f_expr : f_fmla
+/-- `lone <expr>`: true when `<expr>` contains **zero or one** elements -/
+syntax "lone" f_expr : f_fmla
+/-- `one <expr>`: true when `<expr>` contains **exactly one** element -/
+syntax "one" f_expr : f_fmla
 
 /--
 Binary operators on Expressions that produce Formulas.
@@ -269,18 +345,18 @@ inductive ExprBinOp where
   | neq
   deriving Repr, Inhabited
 
-declare_syntax_cat f_fmla_of_expr_binop
-syntax "in" : f_fmla_of_expr_binop
-syntax "=" : f_fmla_of_expr_binop
-syntax "!=" : f_fmla_of_expr_binop
-
-def ExprBinOp.of_syntax : TSyntax `f_fmla_of_expr_binop → MetaM ExprBinOp
-  | `(f_fmla_of_expr_binop| in) => return .in
-  | `(f_fmla_of_expr_binop| =) => return .eq
-  | `(f_fmla_of_expr_binop| !=) => return .neq
-  | _ => throwUnsupportedSyntax
-
-syntax f_expr f_fmla_of_expr_binop f_expr : f_fmla
+/--
+`<expr-a> in <expr-b>`: true when `<expr-a>` is a **subset** of or equal to `<expr-b>`.
+-/
+syntax f_expr "in" f_expr : f_fmla
+/--
+`<expr-a> = <expr-b>`: true when `<expr-a>` and `<expr-b>` contain exactly the **same elements**.
+-/
+syntax f_expr "=" f_expr : f_fmla
+/--
+`<expr-a> != <expr-b>`: true when `<expr-a>` and `<expr-b>` contain **different elements**. In other words, when `<expr-a> = <expr-b>` is **false**.
+-/
+syntax f_expr "!=" f_expr : f_fmla
 
 /--
 A quantification of the form
@@ -310,6 +386,7 @@ inductive Quantifier where
   | all
   deriving Repr, Inhabited
 
+-- TODO: add documentation to all the following syntax
 declare_syntax_cat f_fmla_quantifier
 syntax "no" : f_fmla_quantifier
 syntax "lone" : f_fmla_quantifier
@@ -369,7 +446,8 @@ def UnOp.of_syntax : TSyntax `f_expr_unop → MetaM UnOp
   | `(f_expr_unop| *) => return .reflexive_transitive_closure
   | _ => throwUnsupportedSyntax
 
-syntax f_expr_unop f_expr : f_expr
+-- TODO: make UnOps bind more than BinOps
+syntax:max f_expr_unop f_expr : f_expr
 
 inductive BinOp where
   | union
@@ -394,7 +472,8 @@ def BinOp.of_syntax : TSyntax `f_expr_binop → MetaM BinOp
   | `(f_expr_binop| ->) => return .cross
   | _ => throwUnsupportedSyntax
 
-syntax f_expr f_expr_binop f_expr : f_expr
+-- Precedence rules
+syntax:10 f_expr f_expr_binop f_expr : f_expr
 
 /-
 Everything else
@@ -408,6 +487,7 @@ syntax f_expr "[" f_expr,* "]" : f_expr
 -- literal
 syntax ident : f_expr
 -- let
+syntax "let" ident "=" f_expr "|" f_fmla : f_fmla
 syntax "let" ident "=" f_expr "|" f_expr : f_expr
 -- parens
 syntax "(" f_expr ")" : f_expr
@@ -436,8 +516,9 @@ mutual
 
     /-- Predicate applications -/
     | app (pred_name : Symbol) (args : List Expression) (tok : Syntax)
-    | true
-    | false
+    | let (id : Symbol) (expression : Expression) (body : Formula) (tok : Syntax)
+    | true (tok : Syntax)
+    | false (tok : Syntax)
     deriving Repr, Inhabited
 
   inductive Expression where
@@ -458,6 +539,27 @@ mutual
     deriving Repr, Inhabited
 end
 
+def Formula.tok : Formula → Syntax
+  | Formula.unop _ _ tok => tok
+  | Formula.binop _ _ _ tok => tok
+  | Formula.implies_else _ _ _ tok => tok
+  | Formula.expr_unop _ _ tok => tok
+  | Formula.expr_binop _ _ _ tok => tok
+  | Formula.quantifier _ _ _ tok => tok
+  | Formula.app _ _ tok => tok
+  | Formula.let _ _ _ tok => tok
+  | Formula.true tok => tok
+  | Formula.false tok => tok
+
+def Expression.tok : Expression → Syntax
+  | Expression.unop _ _ tok => tok
+  | Expression.binop _ _ _ tok => tok
+  | Expression.if_then_else _ _ _ tok => tok
+  | Expression.set_comprehension _ _ tok => tok
+  | Expression.app _ _ tok => tok
+  | Expression.literal _ tok => tok
+  | Expression.let _ _ _ tok => tok
+
 mutual
   partial def Arguments.one_of_syntax : TSyntax `f_arg → MetaM (List (Symbol × Expression))
     | `(f_arg| $names:ident,* : $expr:f_expr) =>
@@ -472,17 +574,42 @@ mutual
 
   partial def Formula.of_syntax (stx : TSyntax `f_fmla) : MetaM Formula :=
     match stx with
+    -- Unary Operators
     | `(f_fmla| $unop:f_fmla_unop $fmla:f_fmla) =>
       return Formula.unop (← Formula.UnOp.of_syntax unop) (← Formula.of_syntax fmla) stx
-    | `(f_fmla| $fmla_a:f_fmla $binop:f_fmla_binop $fmla_b:f_fmla) =>
-      return Formula.binop (← Formula.BinOp.of_syntax binop) (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) stx
+    -- Binary Operators
+    | `(f_fmla| $fmla_a:f_fmla && $fmla_b:f_fmla)
+    | `(f_fmla| $fmla_a:f_fmla and $fmla_b:f_fmla) =>
+      return Formula.binop .and (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) stx
+    | `(f_fmla| $fmla_a:f_fmla || $fmla_b:f_fmla)
+    | `(f_fmla| $fmla_a:f_fmla or $fmla_b:f_fmla) =>
+      return Formula.binop .or (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) stx
+    | `(f_fmla| $fmla_a:f_fmla => $fmla_b:f_fmla)
+    | `(f_fmla| $fmla_a:f_fmla implies $fmla_b:f_fmla) =>
+      return Formula.binop .implies (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) stx
+    | `(f_fmla| $fmla_a:f_fmla <=> $fmla_b:f_fmla)
+    | `(f_fmla| $fmla_a:f_fmla iff $fmla_b:f_fmla) =>
+      return Formula.binop .iff (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) stx
+    -- Ternary Operators
     | `(f_fmla| $fmla_a:f_fmla => $fmla_b:f_fmla else $fmla_c:f_fmla)
     | `(f_fmla| $fmla_a:f_fmla implies $fmla_b:f_fmla else $fmla_c:f_fmla) =>
       return Formula.implies_else (← Formula.of_syntax fmla_a) (← Formula.of_syntax fmla_b) (← Formula.of_syntax fmla_c) stx
-    | `(f_fmla| $unop:f_fmla_of_expr_unop $expr_b:f_expr) =>
-      return Formula.expr_unop (← Formula.ExprUnOp.of_syntax unop) (← Expression.of_syntax expr_b) stx
-    | `(f_fmla| $expr_a:f_expr $binop:f_fmla_of_expr_binop $expr_b:f_expr) =>
-      return Formula.expr_binop (← Formula.ExprBinOp.of_syntax binop) (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+    -- Unary operators on expressions (quantifiers)
+    | `(f_fmla| some $expr_b:f_expr) =>
+      return Formula.expr_unop .some (← Expression.of_syntax expr_b) stx
+    | `(f_fmla| no $expr_b:f_expr) =>
+      return Formula.expr_unop .no (← Expression.of_syntax expr_b) stx
+    | `(f_fmla| lone $expr_b:f_expr) =>
+      return Formula.expr_unop .lone (← Expression.of_syntax expr_b) stx
+    | `(f_fmla| one $expr_b:f_expr) =>
+      return Formula.expr_unop .one (← Expression.of_syntax expr_b) stx
+    -- Binary operators on expressions
+    | `(f_fmla| $expr_a:f_expr in $expr_b:f_expr) =>
+      return Formula.expr_binop .in (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+    | `(f_fmla| $expr_a:f_expr = $expr_b:f_expr) =>
+      return Formula.expr_binop .eq (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+    | `(f_fmla| $expr_a:f_expr != $expr_b:f_expr) =>
+      return Formula.expr_binop .neq (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
     | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | { $fmla:f_fmla })
     | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | $fmla:f_fmla ) => do
       let quantification ← Formula.Quantifier.of_syntax quantifier
@@ -491,11 +618,13 @@ mutual
     | `(f_fmla| $name:ident ) => do
       return Formula.app name.getId [] stx
     | `(f_fmla| $name:ident [ $expr,* ]) => do
-      return Formula.app name.getId (← expr.getElems.toList.mapM Expression.of_syntax) stx
+      return Formula.app name.getId (← expr.getElems.toList.mapM Expression.of_syntax) name
+    | `(f_fmla| let $id:ident = $expr_a:f_expr | $fmla:f_fmla) =>
+      return Formula.let id.getId (← Expression.of_syntax expr_a) (← Formula.of_syntax fmla) stx
     | `(f_fmla| ( $fmla:f_fmla )) => return (← Formula.of_syntax fmla)
     | `(f_fmla| { $fmla:f_fmla }) => return (← Formula.of_syntax fmla)
-    | `(f_fmla| true) => return Formula.true
-    | `(f_fmla| false) => return Formula.false
+    | `(f_fmla| true) => return Formula.true stx
+    | `(f_fmla| false) => return Formula.false stx
     | _ => throwUnsupportedSyntax
 
   partial def Expression.of_syntax (stx : TSyntax `f_expr) : MetaM Expression :=
@@ -527,6 +656,33 @@ structure Predicate where
 declare_syntax_cat f_pred
 declare_syntax_cat f_pred_args
 syntax "[" f_args "]" : f_pred_args
+/--
+### Predicates
+
+If you have a set of constraints that you use often, or that you'd like to give a name to, you can define a _predicate_ using the `pred` keyword. A predicate has the following form:
+
+```
+pred <pred-name> {
+   <fmla-1>
+   <fmla-2>
+   ...
+   <fmla-n>
+}
+```
+
+Newlines between formulas in a `pred` will be combined implicitly with `and`s, helping keep your predicates uncluttered. Predicates can also be defined with arguments, which will be evaluated via substitution. For instance, in a family-tree model, you could create:
+
+```
+pred parentOrChildOf[p1, p2: Person] {
+  p2 = p1.parent1 or
+  p2 = p1.parent2 or
+  p1 = p2.parent1 or
+  p1 = p2.parent1
+}
+```
+
+and then write something like `some p : Person | parentOrChildOf[Tim, p]`. Predicates may be used like this anywhere a formula can appear.
+-/
 syntax "pred" ident f_pred_args ? "{" f_fmla* "}" : f_pred
 
 def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
@@ -535,7 +691,7 @@ def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
     let args := []
     -- Join fmla list with `ands`. No base case, if empty, then true. Else one element.
     let body ← ( match fmla.toList with
-    | [] => return Formula.true
+    | [] => return Formula.true stx
     | fmla => do
       let fmlas_rev := fmla.reverse
       let init ← Formula.of_syntax fmlas_rev.head!
@@ -546,7 +702,7 @@ def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
     let args ← Arguments.of_syntax args
     -- Join fmla list with `ands`. No base case, if empty, then true. Else one element.
     let body ← ( match fmla.toList with
-    | [] => return Formula.true
+    | [] => return Formula.true stx
     | fmla => do
       let fmlas_rev := fmla.reverse
       let init ← Formula.of_syntax fmlas_rev.head!
@@ -606,3 +762,8 @@ def ForgeModel.of_syntax : TSyntax `f_program → MetaM ForgeModel
   | _ => throwUnsupportedSyntax
 
 end ForgeSyntax
+
+/-
+Big TODO:
+ - At some point in time, this entire code will probably need a large rehaul
+-/

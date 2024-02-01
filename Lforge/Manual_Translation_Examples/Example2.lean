@@ -29,18 +29,44 @@ def lone_field {α : Type} {β : Type} (f : α → β → Prop) :=
 
 ----- SIGS -----
 
+
+opaque Student : Type
+-- @[instance] axiom inhabited_student : Inhabited Student
+
 opaque Undergrad : Type
-opaque Grad : Type
+
+-- Coercion metho
+
+@[instance] axiom cus : Coe Undergrad Student
+
+def IsUndergrad (s : Student) : Prop := ∃ x : Undergrad, x = s
+
+-- Subtype method
+
+opaque IsGrad : Student → Prop
+@[reducible] def Grad : Type :=
+  { s : Student // IsGrad s }
+
+@[instance] axiom inhabited_grad : Inhabited Grad
 
 opaque IsSpecialGrad : Grad → Prop
-def SpecialGrad : Type :=
+@[reducible] def SpecialGrad : Type :=
   { s : Grad // IsSpecialGrad s }
-axiom special_grad_of_grad : Grad → SpecialGrad
 
+@[instance] axiom inhabited_special_grad : Inhabited SpecialGrad
+
+noncomputable opaque a : SpecialGrad
+#check (a : Student)
+
+axiom abstract_student : ∀ s : Student, IsUndergrad s ∨ IsGrad s
+
+-- instance Coe Undergrad Student :=
+
+-- axiom special_grad_of_grad : Grad → SpecialGrad
 
 -- axiom one_specialgrad : one_sig SpecialGrad
 
-def Student : Type := Undergrad ⊕ Grad
+-- def Student : Type := Undergrad ⊕ Grad
 
 theorem a : Coe Grad SpecialGrad := by
   done

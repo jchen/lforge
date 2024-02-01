@@ -32,6 +32,18 @@ private partial def arrowTypeOfList (types : List Symbol) : TermElabM Expr := do
     mkArrow (mkConst type) (← arrowTypeOfList rest)
 
 /--
+Constructs an arrow type from a list, with named variables. Used in Pred elaborator.
+-/
+private partial def namedArrowTypeOfList (types : List (Symbol × Symbol)) : TermElabM Expr := do
+  match types with
+  | [] =>
+    -- Prop
+    pure (mkSort levelZero)
+    -- α → β → ... → Prop
+  | ⟨name, type⟩ :: rest =>
+    return .forallE name (mkConst type) (← namedArrowTypeOfList rest) .default
+
+/--
 Constructs an arrow value from a list (ending in → Prop), allows for `opaque` definitions.
 Just returns α → β → ... → True
 -/
@@ -47,13 +59,14 @@ private partial def arrowValueOfList (types : List Symbol) : TermElabM Expr := d
 def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : CommandElabM Unit := do
   let env ← getEnv
   /-
-  The helper will create a declaration corresponding to the quanfication of a field, for example:
+  The helper will create a declaration corresponding to the quantification of a field, for example:
   lone_parent, one_teacher, pfunc_owner, etc.
   -/
   let helper (pre : String) (quantifier_predicate : Name) (tok : Syntax) : CommandElabM Unit := (do
     let statement ← liftTermElabM $ mkAppM quantifier_predicate #[mkConst f.name]
+    let name := f.name.appendBefore pre
     let decl := Declaration.axiomDecl {
-      name := f.name.appendBefore pre,
+      name := name,
       levelParams := [],
       type := statement,
       isUnsafe := False,
@@ -63,6 +76,7 @@ def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : Com
       if (← getOptions).getBool `forge.hints .true then
         logInfoAt tok m!"axiom {pre}{f.name} : {statement}"
       setEnv env
+      liftTermElabM $ addTermInfo' tok (mkConst name)
     | Except.error ex =>
       throwErrorAt tok ex.toMessageData $ ← getOptions)
   match m with
@@ -95,6 +109,7 @@ def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := do
     if (← getOptions).getBool `forge.hints .true then
       logInfoAt f.name_tok m!"opaque {f.name} : {fieldType}"
     setEnv env
+    liftTermElabM $ addTermInfo' f.name_tok (mkConst f.name)
   | Except.error ex =>
     throwErrorAt s.name_tok ex.toMessageData (← getOptions)
   f.multiplicity.elab s f
@@ -118,6 +133,7 @@ def Sig.elab (s : Sig): CommandElabM Unit := do
     if (← getOptions).getBool `forge.hints .true then
       logInfoAt s.name_tok m!"opaque {s.name} : Type"
     setEnv env
+    liftTermElabM $ addTermInfo' s.name_tok (mkConst s.name)
   | Except.error ex =>
     throwErrorAt s.name_tok ex.toMessageData (← getOptions)
   s.quantifier.elab s
@@ -131,7 +147,12 @@ def Sig.lift_and_elab_multiple (sigs : List Sig) : CommandElabM Unit := do
   sigs.forM (λ s ↦ s.fields.forM (Field.elab s))
 
 mutual
-partial def Formula.elab (env : HashMap Name Expr) (fmla : Formula) : TermElabM Expr :=
+partial def Formula.elab (env : HashMap Name Expr) (fmla : Formula) : TermElabM Expr := do
+  let inner ← fmla.elab' env
+  -- addTermInfo' fmla.tok inner
+  return inner
+
+partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM Expr :=
   match fmla with
   | .unop op fmla _tok => do
     let fmla ← fmla.elab env
@@ -208,11 +229,25 @@ partial def Formula.elab (env : HashMap Name Expr) (fmla : Formula) : TermElabM 
       throwError "TODO quantifier unreached"
   | Formula.app name args _tok => do
     let args ← args.mapM $ Expression.elab env
+    addTermInfo' _tok (mkConst name)
     mkAppM name args.toArray
-  | Formula.true => mkConst ``True
-  | Formula.false => mkConst ``False
+  | Formula.let name expression body _tok => do
+    let bound_expr ← expression.elab env
+    let bound_type ← inferType bound_expr
+    let let_body ← withLetDecl name bound_type bound_expr
+      (λ fvar => do
+        let body ← body.elab $ env.insert name fvar
+        mkLetFVars #[fvar] body)
+    return let_body
+  | Formula.true _ => mkConst ``True
+  | Formula.false _ => mkConst ``False
 
-partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : TermElabM Expr :=
+partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : TermElabM Expr := do
+  let inner ← expr.elab' env
+  addTermInfo' expr.tok inner
+  return inner
+
+partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : TermElabM Expr :=
   match expr with
   | Expression.unop op expr _tok => do
     let expr ← expr.elab env
@@ -290,10 +325,14 @@ partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : Term
     -- Folds over the resolved names, joining them all together
     resolved_names.tail!.foldr
       (λ elt acc ↦ do mkAppM ``Forge.HJoin.join #[← acc, elt] ) (pure resolved_names.head!)
-  | Expression.let _id expression body _tok => do
-    let expression ← expression.elab env
-    let body ← body.elab env
-    throwError "TODO let elab"
+  | Expression.let name expression body _tok => do
+    let bound_expr ← expression.elab env
+    let bound_type ← inferType bound_expr
+    let let_body ← withLetDecl name bound_type bound_expr
+      (λ fvar => do
+        let body ← body.elab $ env.insert name fvar
+        mkLetFVars #[fvar] body)
+    return let_body
 where
 explode_names (name : Name) : List Name :=
   match name with
@@ -324,17 +363,19 @@ def Predicate.elab (p : Predicate) : CommandElabM Unit := do
           acc.insert name fvar_type) .empty
         let body ← p.body.elab new_env
         fvars.foldrM (λ (fvar : Expr) (acc : Expr) ↦ do
-          -- TODO: Get names in printed type statement
           mkLambdaFVars #[fvar] acc) body)
     )
-  let type_symbol_list ← p.args.mapM (λ v ↦ match v.2 with
-    | .literal l _tok => return l
+  let type_name_symbol_list : List (Symbol × Symbol) ← p.args.mapM (λ v ↦ match v.2 with
+    | .literal l _tok => return (v.1, l)
     -- TODO: this is a bit janky
     | _ => throwError "Expected types in predicate definition, got expressions instead." )
-  let type ← liftTermElabM $ arrowTypeOfList type_symbol_list
+  let type_symbol_list : List Symbol := type_name_symbol_list.map (λ v ↦ v.2)
+  let type ← liftTermElabM $ namedArrowTypeOfList type_name_symbol_list
   let predDecl := Declaration.defnDecl {
     name := p.name,
     levelParams := [],
+    -- TODO: Can change to this throughout?
+    -- type := (← liftTermElabM $ inferType val),
     type := type,
     hints := ReducibilityHints.opaque,
     value := val,
@@ -342,6 +383,8 @@ def Predicate.elab (p : Predicate) : CommandElabM Unit := do
   }
   match env.addDecl predDecl with
   | Except.ok env => do
+    -- TODO: Make more of these!
+    liftTermElabM $ addTermInfo' p.name_tok val
     setEnv env
     if (← getOptions).getBool `forge.hints .true then
       let type_string := type_symbol_list.foldr (λ (s : Symbol) (acc : String) ↦ s.toString ++ " → " ++ acc) "Prop"
@@ -366,7 +409,7 @@ def Function.elab (f : Function) : CommandElabM Unit := do
     throwErrorAt f.name_tok ex.toMessageData (← getOptions)
 
 @[command_elab forge_program]
-def forgeImpl : CommandElab
+partial def forgeImpl : CommandElab
   | `(command| $s:f_program) => do
     let model ← liftTermElabM $ ForgeModel.of_syntax s
     -- Elaborate all sigs first, this is so sig Types are defined (and lifted) before we try to define any fields, functions or predicates
@@ -376,3 +419,6 @@ def forgeImpl : CommandElab
   | _ => throwUnsupportedSyntax
 
 end ForgeSyntax
+
+
+#check Lean.Elab.Term.elabLetDeclAux

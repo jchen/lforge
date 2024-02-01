@@ -129,9 +129,15 @@ instance {α β : Type} : HIn (α → β → Prop) (α → β → Prop) where
   subset := fun f g ↦ ∀ a b, f a b → g a b
 
 /- Eq -/
+/--
+test c
+-/
 class HEq (α : Type) (β : Type) :=
   (eq : α → β → Prop)
 
+/--
+test d
+-/
 infix:60 " =ᶠ " => HEq.eq
 
 @[reducible] instance [HEq α β] : HEq β α where
@@ -166,13 +172,19 @@ instance {α β : Type} : HTranspose (α → β → Prop) (β → α → Prop) w
 
 /- Join -/
 
+/--
+Testy test
+-/
 class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
   (join : α → β → γ)
 
+/--
+test b
+-/
 infix:50 " ⋈ " => HJoin.join
 
 instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
-  join := fun a g b ↦ g a b
+  join := fun a g ↦ g a
 
 instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
   join := fun f g b ↦ ∃ a : α, f a ∧ g a b

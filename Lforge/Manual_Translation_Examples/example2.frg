@@ -1,6 +1,8 @@
 #lang forge
 
-abstract sig Student {}
+abstract sig Student {
+    buddy: one Student
+}
 sig Undergrad, Grad extends Student {}
 one sig SpecialGrad extends Grad {}
 

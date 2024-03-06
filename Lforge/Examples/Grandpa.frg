@@ -1,9 +1,4 @@
 import Lforge
-
--- set_option forge.hints true
--- set_option pp.raw true
--- set_option pp.raw.maxDepth 10
-
 #lang forge
 
 sig Person {
@@ -11,19 +6,19 @@ sig Person {
     parent2 : lone Person,
     spouse  : lone Person
 }
-
 -- DO NOT EDIT above this line
--- Note that in the instructions below, a person X is "related" to person Y if
--- Y is reachable from X by chaining `.parent1`s or `.parent2`s in any order, any number of times, on X.
+-- Note that in the instructions below, a person X is an ancestor to person Y if
+-- X is reachable from Y by chaining `.parent1`s or `.parent2`s in any order, any number of times, on Y.
+
+-- You will find the "reachable" built-in predicate useful. See the docs linked in the handout.
+
+#check Person
+#check @parent1
+#check lone_parent1
+
 pred isNotRelated[x: Person, y: Person] {
-    not x->y in ^parent1 + ^parent2 + parent2
+    not x->y in ^parent1 + ^parent2
 }
-
-pred test {
-    true || true || true <=> true || false => false else true && false
-}
-
-#print test
 
 #print isNotRelated
 
@@ -47,7 +42,7 @@ pred FamilyFact {
         isNotRelated[p, q]
     }
     -- distinct parents
-    all p: Person | all q, r: Person | p.parent1 = q && p.parent2 = r implies {
+    all p: Person | all q, r: Person | (p.parent1 = q && p.parent2 = r) implies {
         q != r
     }
 
@@ -63,20 +58,19 @@ pred FamilyFact {
     all p: Person | all q, r, s: Person | p.parent1 = q and p.parent2 = r and p.spouse = s implies {
         isNotRelated[q, s] and isNotRelated[r, s]
     }
-
 }
 
 #print FamilyFact
 
 theorem a : FamilyFact := by
-    simp [FamilyFact]
-    -- rw [Forge.HJoin.join]
-    simp only [Forge.HJoin.join]
-    simp only [Forge.HEq.eq]
-    simp only [Set.singleton]
-    simp only [setOf]
-    sorry
-    done
+  simp [FamilyFact]
+  simp only [Forge.HJoin.join]
+  simp only [Forge.HEq.eq]
+  simp only [Set.singleton]
+  simp only [isNotRelated]
+
+  sorry
+  done
 
 pred ownGrandparent {
     -- Fill in a constraint that requires there to be a case where someone is their own grandpa.
@@ -84,3 +78,7 @@ pred ownGrandparent {
     some p, f, w, d: Person |
     isParent[d, w] and isParent[p, f] and p.spouse = w and f.spouse = d
 }
+
+-- While it can be fun to test this for more people your solution should
+-- be valid for exactly 4 Person
+-- run {FamilyFact ownGrandparent} for exactly 4 Person

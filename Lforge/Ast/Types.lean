@@ -191,6 +191,36 @@ inductive Expression.BinOp where
   | cross
   deriving Repr, Inhabited
 
+inductive Integer.Aggregator where
+  | sum
+  | max
+  | min
+  deriving Repr, Inhabited
+
+inductive Integer.UnOp where
+  | neg
+  | sgn
+  deriving Repr, Inhabited
+
+inductive Integer.BinOp where
+  | mod
+  deriving Repr, Inhabited
+
+inductive Integer.MulOp where
+  | add
+  | sub
+  | mul
+  | div
+  deriving Repr, Inhabited
+
+inductive Integer.Comparison where
+  | eq
+  | lt
+  | leq
+  | gt
+  | geq
+  deriving Repr, Inhabited
+
 mutual
   /-
   All formulas evaluate to boolean values
@@ -211,6 +241,8 @@ mutual
     | let (id : Symbol) (expression : Expression) (body : Formula) (tok : Syntax)
     | true (tok : Syntax)
     | false (tok : Syntax)
+    -- /-- integer comparison -/
+    -- | cmp (op : Integer.Comparison) (expr_a expr_b : Expression) (tok : Syntax)
     deriving Repr, Inhabited
 
   inductive Expression where
@@ -225,6 +257,19 @@ mutual
     /-- a literal value, can be sig, relation, or top-level expr (univ, none, iden, etc.) -/
     | literal (value : Symbol) (tok : Syntax)
     | let (id : Symbol) (expression : Expression) (body : Expression) (tok : Syntax)
+    deriving Repr, Inhabited
+
+  inductive Integer where
+    | int (val : Int) (tok : Syntax)
+    | count (expr : Expression) (tok : Syntax)
+    | agg (agg : Integer.Aggregator) (expr : Expression) (tok : Syntax)
+    | sum (binder : Symbol) (expr : Expression) (body : Integer) (tok : Syntax)
+    | unop (op : Integer.UnOp) (expr : Integer) (tok : Syntax)
+    | binop (op : Integer.BinOp) (expr_a expr_b : Integer) (tok : Syntax)
+    | mulop (op : Integer.MulOp) (exprs : List Integer) (tok : Syntax)
+    | let (id : Symbol) (expression : Integer) (body : Integer) (tok : Syntax)
+    /-- An implicit cast from an expression to an integer -/
+    | cast (expr : Expression) (tok : Syntax)
     deriving Repr, Inhabited
 end
 

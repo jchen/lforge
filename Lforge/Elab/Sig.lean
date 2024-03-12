@@ -98,5 +98,4 @@ def Sig.lift_and_elab_multiple (sigs : List Sig) : CommandElabM Unit := do
   sigs.forM Sig.elab
   sigs.forM (λ s ↦ s.fields.forM (Field.elab s))
 
-
 end ForgeSyntax

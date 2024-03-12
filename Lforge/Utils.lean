@@ -2,6 +2,10 @@ import Mathlib.Tactic
 import Mathlib.Logic.Relation
 set_option autoImplicit false
 
+def univ {α : Type} : Set α := fun _ ↦ True
+def none {α : Type} : Set α := fun _ ↦ False
+def iden {α : Type} : α → α := fun a ↦ a
+
 namespace SigQuantifier
   def abstract (a : Type) :=
     IsEmpty a

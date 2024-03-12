@@ -12,6 +12,10 @@ sig Person {
     spouse  : lone Person
 }
 
+sig Number {
+    value : one Int
+}
+
 -- DO NOT EDIT above this line
 -- Note that in the instructions below, a person X is "related" to person Y if
 -- Y is reachable from X by chaining `.parent1`s or `.parent2`s in any order, any number of times, on X.

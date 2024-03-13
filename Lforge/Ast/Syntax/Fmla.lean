@@ -78,6 +78,12 @@ syntax:50 f_expr:50 "=" f_expr:50 : f_fmla
 -/
 syntax:50 f_expr:50 "!=" f_expr:50 : f_fmla
 
+-- Number operators
+syntax:50 f_expr:50 "<" f_expr:50 : f_fmla
+syntax:50 f_expr:50 "<=" f_expr:50 : f_fmla
+syntax:50 f_expr:50 ">" f_expr:50 : f_fmla
+syntax:50 f_expr:50 ">=" f_expr:50 : f_fmla
+
 -- implies-else
 /--
 `<fmla-a> => <fmla-b> else <fmla-c>`: **true** when `<fmla-a>` evaluates to **true** and `<fmla-b>` evaluates to **true**, or `<fmla-a>` evaluates to **false** and `<fmla-c>` evaluates to **true**. Produces `<fmla-a> → <fmla-b> ∧ ¬ <fmla-a> → <fmla-c>`.

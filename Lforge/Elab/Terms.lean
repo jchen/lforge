@@ -36,8 +36,8 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
     let fmla_b ← fmla_b.elab env
     let fmla_c ← fmla_c.elab env
     mkAppM ``And #[
-      ← mkAppM ``Implies #[fmla_a, fmla_b],
-      ← mkAppM ``Implies #[← mkAppM ``Not #[fmla_a], fmla_c]]
+      mkForall (← MonadQuotation.addMacroScope `a) BinderInfo.default fmla_a fmla_b,
+      mkForall (← MonadQuotation.addMacroScope `a) BinderInfo.default (← mkAppM ``Not #[fmla_a]) fmla_c]
   | Formula.expr_unop op expr _tok => do
     let expr ← expr.elab env
     match op with
@@ -45,13 +45,28 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
     | Formula.ExprUnOp.no => mkAppM ``ExprQuantifier.no #[expr]
     | Formula.ExprUnOp.lone => mkAppM ``ExprQuantifier.lone #[expr]
     | Formula.ExprUnOp.one => mkAppM ``ExprQuantifier.one #[expr]
-  | Formula.expr_binop op expr_a expr_b _tok => do
+  | Formula.expr_binop op expr_a expr_b tok => do
     let expr_a ← expr_a.elab env
     let expr_b ← expr_b.elab env
     match op with
     | Formula.ExprBinOp.in => mkAppM ``Forge.HIn.subset #[expr_a, expr_b]
     | Formula.ExprBinOp.eq => mkAppM ``Forge.HEq.eq #[expr_a, expr_b]
     | Formula.ExprBinOp.neq => mkAppM ``Not #[← mkAppM ``Forge.HEq.eq #[expr_a, expr_b]]
+    -- integer operations
+    | Formula.ExprBinOp.lt
+    | Formula.ExprBinOp.leq
+    | Formula.ExprBinOp.gt
+    | Formula.ExprBinOp.geq => do
+      let op := ( match op with
+        | Formula.ExprBinOp.lt => ``LT.lt
+        | Formula.ExprBinOp.leq => ``LE.le
+        | Formula.ExprBinOp.gt => ``GT.gt
+        | Formula.ExprBinOp.geq => ``GE.ge
+        | _ => unreachable! )
+      -- Check that types are ints
+      let expr_a_type ← ensureHasType (mkConst ``Int) expr_a
+      let expr_b_type ← ensureHasType (mkConst ``Int) expr_b
+      mkAppM op #[expr_a, expr_b]
   | Formula.quantifier quantification vars fmla _tok => do
     let vars ← vars.mapM (λ v ↦ do
       let (name, type) := v
@@ -196,6 +211,44 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
         let body ← body.elab $ env.insert name fvar
         mkLetFVars #[fvar] body)
     return let_body
+  | Expression.int val tok => do
+    -- todo: return the int of val, I'm not sure if this is right but oh welp
+    match val with
+    | .ofNat n => mkAppM ``Int.ofNat #[mkNatLit n]
+    | .negSucc n => mkAppM ``Int.negSucc #[mkNatLit n]
+  | Expression.int.count expr _tok => do
+    let expr ← expr.elab env
+    -- make metavariable and ensure set type
+    let expr ← ensureHasType (mkApp (mkConst ``Set) (← mkFreshTypeMVar)) expr
+    mkAppM ``Set.ncard #[expr]
+  | Expression.int.agg .sing expr _tok => do
+    ensureHasType (mkConst ``Int) (← expr.elab env)
+  | Expression.int.agg op expr _tok => do
+    -- TODO!
+    throwErrorAt _tok "TODO: int.agg"
+  | Expression.int.sum binder expr body _tok => do
+    let expr ← expr.elab env
+    let body ← body.elab (env.insert binder expr)
+    throwErrorAt _tok "TODO: int.sum"
+  | Expression.int.unop op expr _tok => do
+    let expr ← expr.elab env
+    match op with
+    | .abs => mkAppM ``Int.natAbs #[expr]
+    | .sgn => mkAppM ``Int.sign #[expr]
+  | Expression.int.binop .mod expr_a expr_b _tok => do
+    let expr_a ← expr_a.elab env
+    let expr_b ← expr_b.elab env
+    mkAppM ``Int.mod #[expr_a, expr_b]
+  | Expression.int.mulop op exprs _tok => do
+    let exprs ← exprs.mapM (λ e ↦ e.elab env)
+    let exprs ← exprs.mapM (λ e ↦ ensureHasType (mkConst ``Int) e)
+    let operation := ( match op with
+      | .add => ``Int.add
+      | .sub => ``Int.sub
+      | .mul => ``Int.mul
+      | .div => ``Int.div )
+    exprs.tail!.foldlM (λ acc e ↦ mkAppM operation #[acc, e]) exprs.head!
+
 where
 explode_names (name : Name) : List Name :=
   match name with

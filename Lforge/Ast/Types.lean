@@ -147,6 +147,11 @@ inductive Formula.ExprBinOp where
   | eq
   /-- The two expressions are not equal. Produces `¬ ExprCmp.eq <expr-a> <expr-b>`. -/
   | neq
+  /- Integer binops -/
+  | lt
+  | leq
+  | gt
+  | geq
   deriving Repr, Inhabited
 
 /--
@@ -191,34 +196,27 @@ inductive Expression.BinOp where
   | cross
   deriving Repr, Inhabited
 
-inductive Integer.Aggregator where
+inductive Expression.Integer.Aggregator where
+  | sing
   | sum
   | max
   | min
   deriving Repr, Inhabited
 
-inductive Integer.UnOp where
-  | neg
+inductive Expression.Integer.UnOp where
+  | abs
   | sgn
   deriving Repr, Inhabited
 
-inductive Integer.BinOp where
+inductive Expression.Integer.BinOp where
   | mod
   deriving Repr, Inhabited
 
-inductive Integer.MulOp where
+inductive Expression.Integer.MulOp where
   | add
   | sub
   | mul
   | div
-  deriving Repr, Inhabited
-
-inductive Integer.Comparison where
-  | eq
-  | lt
-  | leq
-  | gt
-  | geq
   deriving Repr, Inhabited
 
 mutual
@@ -257,19 +255,21 @@ mutual
     /-- a literal value, can be sig, relation, or top-level expr (univ, none, iden, etc.) -/
     | literal (value : Symbol) (tok : Syntax)
     | let (id : Symbol) (expression : Expression) (body : Expression) (tok : Syntax)
-    deriving Repr, Inhabited
-
-  inductive Integer where
+    /- Integer expressions -/
+    /-- Integer literal -/
     | int (val : Int) (tok : Syntax)
-    | count (expr : Expression) (tok : Syntax)
-    | agg (agg : Integer.Aggregator) (expr : Expression) (tok : Syntax)
-    | sum (binder : Symbol) (expr : Expression) (body : Integer) (tok : Syntax)
-    | unop (op : Integer.UnOp) (expr : Integer) (tok : Syntax)
-    | binop (op : Integer.BinOp) (expr_a expr_b : Integer) (tok : Syntax)
-    | mulop (op : Integer.MulOp) (exprs : List Integer) (tok : Syntax)
-    | let (id : Symbol) (expression : Integer) (body : Integer) (tok : Syntax)
-    /-- An implicit cast from an expression to an integer -/
-    | cast (expr : Expression) (tok : Syntax)
+    /-- Count of a set -/
+    | int.count (expr : Expression) (tok : Syntax)
+    /-- Aggregation of a set -/
+    | int.agg (agg : Expression.Integer.Aggregator) (expr : Expression) (tok : Syntax)
+    /-- Braced sum expression, like `sum <x>: <set> | { ... }`, ensure body is int -/
+    | int.sum (binder : Symbol) (expr : Expression) (body : Expression) (tok : Syntax)
+    /-- Integer unary operator, like op[a], ensure expr is int -/
+    | int.unop (op : Expression.Integer.UnOp) (expr : Expression) (tok : Syntax)
+    /-- Integer biinary operator, like op[a, b], ensure exprs are int -/
+    | int.binop (op : Expression.Integer.BinOp) (expr_a expr_b : Expression) (tok : Syntax)
+    /-- Integer multiple-ary operator, like op[a, b, c, ...], ensure exprs are int -/
+    | int.mulop (op : Expression.Integer.MulOp) (exprs : List Expression) (tok : Syntax)
     deriving Repr, Inhabited
 end
 

@@ -60,6 +60,15 @@ partial def Formula.of_syntax (stx : TSyntax `f_fmla) : MetaM Formula :=
     return Formula.expr_binop .eq (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
   | `(f_fmla| $expr_a:f_expr != $expr_b:f_expr) =>
     return Formula.expr_binop .neq (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+  -- Binary operators on numbers
+  | `(f_fmla| $expr_a:f_expr < $expr_b:f_expr) =>
+    return Formula.expr_binop .lt (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+  | `(f_fmla| $expr_a:f_expr <= $expr_b:f_expr) =>
+    return Formula.expr_binop .leq (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+  | `(f_fmla| $expr_a:f_expr > $expr_b:f_expr) =>
+    return Formula.expr_binop .gt (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+  | `(f_fmla| $expr_a:f_expr >= $expr_b:f_expr) =>
+    return Formula.expr_binop .geq (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
   | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | { $fmla:f_fmla })
   | `(f_fmla| $quantifier:f_fmla_quantifier $args:f_args | $fmla:f_fmla ) => do
     let quantification ← (
@@ -124,8 +133,30 @@ partial def Expression.of_syntax (stx : TSyntax `f_expr) : MetaM Expression :=
     return Expression.let id.getId (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
   -- parens
   | `(f_expr| ( $expr:f_expr )) => return (← Expression.of_syntax expr)
+  -- int literal (and negative):
+  | `(f_expr| $n:num) => return Expression.int n.getNat stx
+  | `(f_expr| -$n:num) => return Expression.int (-n.getNat) stx
+  | `(f_expr| #$expr:f_expr) => return Expression.int.count (← Expression.of_syntax expr) stx
+  | `(f_expr| sing[$expr:f_expr]) => Expression.of_syntax expr
+  | `(f_expr| sum[$expr:f_expr]) => return Expression.int.agg .sum (← Expression.of_syntax expr) stx
+  | `(f_expr| max[$expr:f_expr]) => return Expression.int.agg .max (← Expression.of_syntax expr) stx
+  | `(f_expr| min[$expr:f_expr]) => return Expression.int.agg .min (← Expression.of_syntax expr) stx
+  | `(f_expr| sum $id:ident : $expr:f_expr | $body:f_expr)
+  | `(f_expr| sum $id:ident : $expr:f_expr | { $body:f_expr }) =>
+    return Expression.int.sum id.getId (← Expression.of_syntax expr) (← Expression.of_syntax body) stx
+  | `(f_expr| abs[$expr:f_expr]) => return Expression.int.unop .abs (← Expression.of_syntax expr) stx
+  | `(f_expr| sign[$expr:f_expr]) => return Expression.int.unop .sgn (← Expression.of_syntax expr) stx
+  | `(f_expr| add[$expr:f_expr,*]) =>
+    return Expression.int.mulop .add (← expr.getElems.toList.mapM Expression.of_syntax) stx
+  | `(f_expr| subtract[$expr:f_expr,*]) =>
+    return Expression.int.mulop .sub (← expr.getElems.toList.mapM Expression.of_syntax) stx
+  | `(f_expr| multiply[$expr:f_expr,*]) =>
+    return Expression.int.mulop .mul (← expr.getElems.toList.mapM Expression.of_syntax) stx
+  | `(f_expr| divide[$expr:f_expr,*]) =>
+    return Expression.int.mulop .div (← expr.getElems.toList.mapM Expression.of_syntax) stx
+  | `(f_expr| remainder[$expr_a:f_expr, $expr_b:f_expr]) =>
+    return Expression.int.binop .mod (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
   | _ => throwUnsupportedSyntax
-
 end
 
 end ForgeSyntax

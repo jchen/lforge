@@ -29,6 +29,10 @@ pred test {
 
 #print test
 
+example: test := by
+    sorry
+    done
+
 #print isNotRelated
 
 pred isParent[x: Person, y: Person] {
@@ -88,3 +92,9 @@ pred ownGrandparent {
     some p, f, w, d: Person |
     isParent[d, w] and isParent[p, f] and p.spouse = w and f.spouse = d
 }
+
+pred test2 {
+    5 = #parent1
+}
+
+#print test2

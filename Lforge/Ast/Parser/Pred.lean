@@ -6,7 +6,6 @@ set_option autoImplicit false
 
 namespace ForgeSyntax
 
--- TODO: Broken!
 def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
   match stx with
   | `(f_pred| pred $name:ident { $fmla:f_fmla* }) => do

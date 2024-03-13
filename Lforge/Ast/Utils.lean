@@ -24,5 +24,11 @@ def Expression.tok : Expression → Syntax
   | Expression.app _ _ tok => tok
   | Expression.literal _ tok => tok
   | Expression.let _ _ _ tok => tok
-
+  | Expression.int _ tok => tok
+  | Expression.int.count _ tok => tok
+  | Expression.int.agg _ _ tok => tok
+  | Expression.int.sum _ _ _ tok => tok
+  | Expression.int.unop _ _ tok => tok
+  | Expression.int.binop _ _ _ tok => tok
+  | Expression.int.mulop _ _ tok => tok
 end ForgeSyntax

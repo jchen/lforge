@@ -1,5 +1,6 @@
 import Mathlib.Tactic
 import Mathlib.Logic.Relation
+import Mathlib.Data.Set.Card
 set_option autoImplicit false
 
 def univ {α : Type} : Set α := fun _ ↦ True
@@ -118,6 +119,9 @@ namespace Forge
 class HIn (α : Type) (β : Type) :=
   (subset : α → β → Prop)
 
+/--
+`A ⊂ᶠ B` when `A` is a subset of `B`. If `A` is a singleton, then this is set membership operator.
+-/
 infix:60 " ⊂ᶠ " => HIn.subset
 
 instance : HIn α (Set α) where
@@ -133,14 +137,12 @@ instance {α β : Type} : HIn (α → β → Prop) (α → β → Prop) where
   subset := fun f g ↦ ∀ a b, f a b → g a b
 
 /- Eq -/
-/--
-test c
--/
+
 class HEq (α : Type) (β : Type) :=
   (eq : α → β → Prop)
 
 /--
-test d
+`A =ᶠ B` when `A` is equal to `B`. This works implicitly to compare expressions of mixed types, such as singletons and sets.
 -/
 infix:60 " =ᶠ " => HEq.eq
 
@@ -166,6 +168,9 @@ infix:60 " =ᶠ " => HEq.eq
 class HTranspose (α : Type) (γ : outParam Type) :=
   (transpose : α → γ)
 
+/--
+Returns the transpose of an arity-2 expression.
+-/
 notation:80 lhs:81 "ᵀ" => HTranspose.transpose lhs
 
 instance : HTranspose (α × β) (β × α) where
@@ -176,14 +181,11 @@ instance {α β : Type} : HTranspose (α → β → Prop) (β → α → Prop) w
 
 /- Join -/
 
-/--
-Testy test
--/
 class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
   (join : α → β → γ)
 
 /--
-test b
+`A ⋈ B` returns the relational join of the two exprs. It combines two relations by seeking out rows with common values in their rightmost and leftmost columns. Type as `\bowtie`.
 -/
 infix:50 " ⋈ " => HJoin.join
 

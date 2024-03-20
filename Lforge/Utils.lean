@@ -124,7 +124,7 @@ class HIn (α : Type) (β : Type) :=
 -/
 infix:60 " ⊂ᶠ " => HIn.subset
 
-instance : HIn α (Set α) where
+instance [Coe α β] : HIn α (Set β) where
   subset := fun elt s ↦ s elt
 
 instance : HIn α (α → Prop) where
@@ -189,11 +189,30 @@ class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
 -/
 infix:50 " ⋈ " => HJoin.join
 
-instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
+instance {α β : Type} [Coe ζ α] : HJoin (ζ) (α → β → Prop) (β → Prop) where
+  join := fun a g ↦ g a
+
+instance {α β γ : Type} : HJoin (α) (α → β → γ → Prop) (β → γ → Prop) where
+  join := fun a g ↦ g a
+
+instance {α β γ δ : Type} : HJoin (α) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
+  join := fun a g ↦ g a
+
+instance {α β γ δ ε : Type} : HJoin (α) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
   join := fun a g ↦ g a
 
 instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
-  join := fun f g b ↦ ∃ a : α, f a ∧ g a b
+  join := fun l r b ↦ ∃ a : α, l a ∧ r a b
+
+instance {α β γ : Type} : HJoin (α → Prop) (α → β → γ → Prop) (β → γ → Prop) where
+  join := fun l r b g ↦ ∃ a : α, l a ∧ r a b g
+
+instance {α β γ δ : Type} : HJoin (α → Prop) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
+  join := fun l r b g d ↦ ∃ a : α, l a ∧ r a b g d
+
+instance {α β γ δ ε : Type} : HJoin (α → Prop) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
+  join := fun l r b g d e ↦ ∃ a : α, l a ∧ r a b g d e
+
 
 /- Cross -/
 
@@ -220,5 +239,22 @@ instance {α β : Type} : Inter (α → β → Prop) where
 
 prefix:60 "^" => Relation.TransGen
 prefix:60 "*" => Relation.ReflTransGen
+
+class Card (α : Type) :=
+  (card : Set α → ℤ)
+
+prefix:60 "#" => Card.card
+
+noncomputable instance : Card (Set α) where
+  card := (Set.ncard .)
+
+noncomputable instance : Card (α) where
+  card := fun _ ↦ 1
+
+instance [f: Fintype α] : CoeDep Type (α : Type) (Finset α) where
+  coe := f.elems
+
+instance : Coe α α where
+  coe := (.)
 
 end Forge

@@ -27,23 +27,20 @@ def Predicate.elab (p : Predicate) : CommandElabM Unit := do
     )
   let type_name_symbol_list : List (Symbol × Symbol) ← p.args.mapM (λ v ↦ match v.2 with
     | .literal l _tok => return (v.1, l)
-    -- TODO: this is a bit janky
     | _ => throwError "Expected types in predicate definition, got expressions instead." )
   let type_symbol_list : List Symbol := type_name_symbol_list.map (λ v ↦ v.2)
-  let type ← liftTermElabM $ namedArrowTypeOfList type_name_symbol_list
+  let type ← liftTermElabM $ namedPropArrowTypeOfList type_name_symbol_list
+  let val' ← liftTermElabM $ ensureHasType type val
   let predDecl := Declaration.defnDecl {
     name := p.name,
     levelParams := [],
-    -- TODO: Can change to this throughout?
-    -- type := (← liftTermElabM $ inferType val),
     type := type,
     hints := ReducibilityHints.opaque,
-    value := val,
+    value := val',
     safety := .safe,
   }
   match env.addDecl predDecl with
   | Except.ok env => do
-    -- TODO: Make more of these!
     setEnv env
     liftTermElabM $ addTermInfo' p.name_tok (mkConst p.name)
     if (← getOptions).getBool `forge.hints .false then

@@ -20,16 +20,28 @@ def arrowTypeOfList (types : List Symbol) : TermElabM Expr := do
     mkArrow (mkConst type) (← arrowTypeOfList rest)
 
 /--
-Constructs an arrow type from a list, with named variables. Used in Pred elaborator.
+Constructs an arrow type from a list, with named variables ending in Prop. Used in Pred elaborator.
 -/
-def namedArrowTypeOfList (types : List (Symbol × Symbol)) : TermElabM Expr := do
+def namedPropArrowTypeOfList (types : List (Symbol × Symbol)) : TermElabM Expr := do
   match types with
   | [] =>
     -- Prop
     pure (mkSort levelZero)
     -- α → β → ... → Prop
   | ⟨name, type⟩ :: rest =>
-    return .forallE name (mkConst type) (← namedArrowTypeOfList rest) .default
+    return .forallE name (mkConst type) (← namedPropArrowTypeOfList rest) .default
+
+/--
+Constructs an arrow type from a list. Used in Fun elaborator.
+-/
+def namedArrowTypeOfList (output_type : Expr) (types : List (Symbol × Symbol)) : TermElabM Expr := do
+  match types with
+  | [] =>
+    -- Prop
+    pure output_type
+    -- α → β → ... → Prop
+  | ⟨name, type⟩ :: rest =>
+    return .forallE name (mkConst type) (← namedArrowTypeOfList output_type rest) .default
 
 /--
 Constructs an arrow value from a list (ending in → Prop), allows for `opaque` definitions.

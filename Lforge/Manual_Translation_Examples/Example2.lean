@@ -35,7 +35,7 @@ opaque Student : Type
 
 opaque Undergrad : Type
 
--- Coercion metho
+-- Coercion method
 
 @[instance] axiom cus : Coe Undergrad Student
 
@@ -58,6 +58,8 @@ opaque IsSpecialGrad : Grad → Prop
 noncomputable opaque a : SpecialGrad
 #check (a : Student)
 
+noncomputable def test : Student := a
+
 axiom abstract_student : ∀ s : Student, IsUndergrad s ∨ IsGrad s
 
 -- instance Coe Undergrad Student :=
@@ -68,7 +70,7 @@ axiom abstract_student : ∀ s : Student, IsUndergrad s ∨ IsGrad s
 
 -- def Student : Type := Undergrad ⊕ Grad
 
-theorem a : Coe Grad SpecialGrad := by
+theorem t : Coe Grad SpecialGrad := by
   done
 
 -- opaque Student : Type

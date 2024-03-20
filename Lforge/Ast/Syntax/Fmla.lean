@@ -102,8 +102,8 @@ syntax "one" : f_fmla_quantifier
 syntax "some" : f_fmla_quantifier
 syntax "all" : f_fmla_quantifier
 
-syntax:15 f_fmla_quantifier f_args "|" "{" f_fmla:15 "}" : f_fmla
-syntax:15 f_fmla_quantifier f_args "|" f_fmla:15 : f_fmla
+-- syntax:15 f_fmla_quantifier f_args "|" "{" f_fmla:15 "}" : f_fmla
+syntax:15 f_fmla_quantifier f_args "|" f_fmla : f_fmla
 
 -- literals
 syntax ident : f_fmla

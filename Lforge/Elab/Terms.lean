@@ -45,7 +45,7 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
     | Formula.ExprUnOp.no => mkAppM ``ExprQuantifier.no #[expr]
     | Formula.ExprUnOp.lone => mkAppM ``ExprQuantifier.lone #[expr]
     | Formula.ExprUnOp.one => mkAppM ``ExprQuantifier.one #[expr]
-  | Formula.expr_binop op expr_a expr_b tok => do
+  | Formula.expr_binop op expr_a expr_b _ => do
     let expr_a ← expr_a.elab env
     let expr_b ← expr_b.elab env
     match op with
@@ -211,16 +211,15 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
         let body ← body.elab $ env.insert name fvar
         mkLetFVars #[fvar] body)
     return let_body
-  | Expression.int val tok => do
-    -- todo: return the int of val, I'm not sure if this is right but oh welp
-    match val with
-    | .ofNat n => mkAppM ``Int.ofNat #[mkNatLit n]
-    | .negSucc n => mkAppM ``Int.negSucc #[mkNatLit n]
-  | Expression.int.count expr _tok => do
+  | Expression.int val _tok => Expr.ofInt (mkConst ``Int) val
+   | Expression.int.count expr _tok => do
     let expr ← expr.elab env
+    -- let stx ← PrettyPrinter.delab expr
     -- make metavariable and ensure set type
-    let expr ← ensureHasType (mkApp (mkConst ``Set) (← mkFreshTypeMVar)) expr
-    mkAppM ``Set.ncard #[expr]
+    -- let expr ← ensureHasType (mkApp (mkConst ``Set) (← mkFreshTypeMVar)) expr
+    -- mkAppM ``Set.ncard #[expr]
+    -- let set_term ← elabTerm stx (mkApp (mkConst ``Set) (← mkFreshTypeMVar))
+    mkAppM ``Forge.Card.card #[expr]
   | Expression.int.agg .sing expr _tok => do
     ensureHasType (mkConst ``Int) (← expr.elab env)
   | Expression.int.agg op expr _tok => do
@@ -228,8 +227,11 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
     throwErrorAt _tok "TODO: int.agg"
   | Expression.int.sum binder expr body _tok => do
     let expr ← expr.elab env
-    let body ← body.elab (env.insert binder expr)
-    throwErrorAt _tok "TODO: int.sum"
+    let expr' ← ensureHasType (mkApp (mkConst ``Finset) expr) expr
+    withLocalDeclD binder (expr) (λ fvar => do
+      let body ← body.elab $ env.insert binder fvar
+      let body' ← ensureHasType (mkConst ``Int) body
+      mkAppOptM ``Finset.sum #[(mkConst ``Int), expr, none, expr', mkLambda binder BinderInfo.default (← inferType fvar) body'])
   | Expression.int.unop op expr _tok => do
     let expr ← expr.elab env
     match op with

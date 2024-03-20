@@ -1,15 +1,8 @@
-import Lean
-import Mathlib.Data.Set.Card
-open Lean Meta Elab
+import Mathlib.Tactic
+-- import Mathlib.Logic.Relation
+-- import Mathlib.Data.Set.Card
+set_option autoImplicit false
 
-#check 1 < 2
-#check LT.lt
 
-#check 1 ≤ 2
-#check Set.ncard
-
-#check max
-#check Int.natAbs
-#check Int.sign
-
-#check Int
+#check ({1, 2, 3} : Set ℤ)
+#check Finset.sum {1, 2, 3} (λ x ↦ x)

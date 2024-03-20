@@ -37,6 +37,7 @@ def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : Com
   | .pfunc tok => do
     match f.type with
     | _ :: _ :: [] => helper "pfunc_" ``FieldQuantifier.pfunc tok
+    -- todo: fix for a -> b -> c, can they be pfunc too?
     | _ => throwErrorAt tok m!"Failed to add axiom 'pfunc_{f.name}'. '{f.name}' does not have arity 2."
   | .func tok => do
     match f.type with
@@ -67,34 +68,44 @@ def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := do
   f.multiplicity.elab s f
 
 def Sig.Multiplicity.elab (s : Sig) (m : Sig.Multiplicity) : CommandElabM Unit := do
-  -- Do something to do with finsets, etc
-  -- throwError "TODO multiplicity elab"
-  pure ()
+  -- TODO: Resolve with children sigs
+  -- Every type ought to be inhabited
+  elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.appendBefore "inhabited_") : Inhabited $(mkIdent s.name)))
+  -- Every type is finitely inhabited
+  elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.appendBefore "fintype_") : Fintype $(mkIdent s.name)))
 
 def Sig.elab (s : Sig): CommandElabM Unit := do
   let env ← getEnv
-  let sigDecl := Declaration.opaqueDecl {
-    name := s.name,
-    value := mkSort levelZero,
-    levelParams := [],
-    type := mkSort levelOne,
-    isUnsafe := False,
-  }
-  match env.addDecl sigDecl with
-  | Except.ok env =>
-    if (← getOptions).getBool `forge.hints .false then
-      logInfoAt s.name_tok m!"opaque {s.name} : Type"
-    setEnv env
-    liftTermElabM $ addTermInfo' s.name_tok (mkConst s.name)
-  | Except.error ex =>
-    throwErrorAt s.name_tok ex.toMessageData (← getOptions)
-  s.quantifier.elab s
+  match s.ancestor with
+  | .none =>
+    let sigDecl := Declaration.opaqueDecl {
+      name := s.name,
+      value := mkSort levelZero,
+      levelParams := [],
+      type := mkSort levelOne,
+      isUnsafe := False,
+    }
+    match env.addDecl sigDecl with
+    | Except.ok env =>
+      if (← getOptions).getBool `forge.hints .false then
+        logInfoAt s.name_tok m!"opaque {s.name} : Type"
+      setEnv env
+      liftTermElabM $ addTermInfo' s.name_tok (mkConst s.name)
+    | Except.error ex =>
+      throwErrorAt s.name_tok ex.toMessageData (← getOptions)
+    s.quantifier.elab s
+  | some a => do
+    elabCommand (← `(opaque $(mkIdent $ s.name.appendBefore "Is") : $(mkIdent a) → Prop))
+    let first_char := (s.name.getString!.get! 0).toString
+    elabCommand (← `(@[reducible] def $(mkIdent $ s.name) : Type := { $(mkIdent first_char) : $(mkIdent a) // $(mkIdent $ s.name.appendBefore "Is") $(mkIdent first_char) }))
+    s.quantifier.elab s
 
 /--
 We need to elaborate all top-level sigs before all fields can be elaborated,
 so `Sig.lift_and_elab_multiple` will elab all Sigs and then all of their fields.
 -/
 def Sig.lift_and_elab_multiple (sigs : List Sig) : CommandElabM Unit := do
+  -- TODO: Make dependency DAG
   sigs.forM Sig.elab
   sigs.forM (λ s ↦ s.fields.forM (Field.elab s))
 

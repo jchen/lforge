@@ -1,10 +1,6 @@
 import Lforge
 
--- set_option forge.hints true
--- set_option pp.raw true
--- set_option pp.raw.maxDepth 10
-
-#lang forge
+sig Child extends Person {}
 
 sig Person {
     parent1 : lone Person,
@@ -12,34 +8,62 @@ sig Person {
     spouse  : lone Person
 }
 
-sig Number {
-    value : one Int
-}
 
--- DO NOT EDIT above this line
--- Note that in the instructions below, a person X is "related" to person Y if
--- Y is reachable from X by chaining `.parent1`s or `.parent2`s in any order, any number of times, on X.
+#check Child
+#synth Inhabited Child
+#synth Inhabited Person
+noncomputable opaque c : Child
+#check (c : Person)
+
+#check IsChild
+
+#check Person
+
+instance child_person : Coe Child Person where
+  coe c := c
+
+#synth Coe Child Person
+
 pred isNotRelated[x: Person, y: Person] {
-    not x->y in ^parent1 + ^parent2 + parent2
+    not x->y in ^parent1 + ^parent2
 }
 
-pred test {
-    true || true || true <=> true || false => false else true && false
+pred test2 {
+  all c : Child | c.parent1 != c.parent2
 }
 
-#print test
-
-example: test := by
-    sorry
-    done
-
+#check @isNotRelated
 #print isNotRelated
+
+#synth Inhabited Person
+
+#synth Coe Person Person
+
+#synth Fintype Person
 
 pred isParent[x: Person, y: Person] {
     let p = x.parent1 | y = p or y = x.parent2
 }
 
 #print isParent
+
+example : isParent x y := by
+  simp only [isParent]
+  simp only [Forge.HJoin.join]
+  simp only [Coe.coe]
+  sorry
+  done
+
+fun parentOf[x: Person, y: Person]: set Person {
+    x.parent1
+}
+
+fun numParentsOf[x: Person, y: Person]: Int {
+    #x.parent1
+}
+
+#print isParent
+#print numParentsOf
 
 pred FamilyFact {
     -- No person should be their own spouse
@@ -55,7 +79,7 @@ pred FamilyFact {
         isNotRelated[p, q]
     }
     -- distinct parents
-    all p: Person | all q, r: Person | p.parent1 = q && p.parent2 = r implies {
+    all p: Person | all q, r: Person | (p.parent1 = q && p.parent2 = r) implies {
         q != r
     }
 
@@ -71,30 +95,19 @@ pred FamilyFact {
     all p: Person | all q, r, s: Person | p.parent1 = q and p.parent2 = r and p.spouse = s implies {
         isNotRelated[q, s] and isNotRelated[r, s]
     }
-
 }
 
 #print FamilyFact
 
 theorem a : FamilyFact := by
-    simp [FamilyFact]
-    -- rw [Forge.HJoin.join]
-    simp only [Forge.HJoin.join]
-    simp only [Forge.HEq.eq]
-    simp only [Set.singleton]
-    simp only [setOf]
-    sorry
-    done
+  simp [FamilyFact]
+  simp only [Forge.HJoin.join]
+  simp only [Coe.coe]
+  simp only [Forge.HEq.eq]
+  simp only [Set.singleton]
+  simp only [isNotRelated]
 
-pred ownGrandparent {
-    -- Fill in a constraint that requires there to be a case where someone is their own grandpa.
-    -- (Properly expressing what it means to be your own grandpa is crucial!)
-    some p, f, w, d: Person |
-    isParent[d, w] and isParent[p, f] and p.spouse = w and f.spouse = d
-}
+  sorry
+  done
 
-pred test2 {
-    5 = #parent1
-}
-
-#print test2
+-- SAT based development

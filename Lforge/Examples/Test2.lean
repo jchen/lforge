@@ -1,36 +1,53 @@
 import Mathlib.Tactic
 import Lforge
 
-instance [f: Fintype α] : CoeDep Type (α : Type) (Finset α) where
-  coe := f.elems
+-- instance [f: Fintype α] : CoeDep Type (α : Type) (Finset α) where
+--   coe := f.elems
 
 sig S {
   a: one Int
 }
 
+-- instance [f: Fintype S] : Coe (S : Type) (Finset S) where
+--   coe := λ _ ↦ f.elems
+
 @[instance] axiom inhabited_s : Inhabited S
 @[instance] axiom finset_s : Fintype S
 
-#check (S : Finset S)
-#reduce (S : Finset S)
-
-def summation {α : Type} (s : Finset α) : Int := Finset.sum s (fun _ => 0)
-
-noncomputable opaque n1 : S
-noncomputable opaque n2 : S
-
-def set_s := ({n1, n2} : Set S)
-
+#synth CoeDep Type S (Finset S)
 #check (S : Finset S)
 
-#synth AddCommMonoid ℤ
+#check Finset.sum S (fun _ ↦ 0)
+#check Finset.sum (S : Finset S) (fun _ ↦ 0)
+#check @Finset.sum ℤ S Int.instAddCommMonoidInt S (fun _ ↦ 0)
 
-#check @Finset.sum ℤ S Int.instAddCommMonoidInt S (fun _ => 0)
+#lang forge
+fun test[]: Int {
+  sum x : S | {
+    0
+  }
+}
+
+-- #check (S : Finset S)
+-- #reduce (S : Finset S)
+
+-- def summation {α : Type} (s : Finset α) : Int := Finset.sum s (fun _ => 0)
+
+-- noncomputable opaque n1 : S
+-- noncomputable opaque n2 : S
+
+-- def set_s := ({n1, n2} : Set S)
+
+-- #check (S : Finset S)
+
+-- #synth AddCommMonoid ℤ
+
+-- #check @Finset.sum ℤ S Int.instAddCommMonoidInt S (fun _ => 0)
 
 -- #synth CoeDep Type S (Finset S)
 
-noncomputable instance : Coe S (Finset S) where
-  coe := λ _ ↦ finset_s.elems
+-- noncomputable instance : Coe S (Finset S) where
+--   coe := λ _ ↦ finset_s.elems
 
 -- #check Finset.sum S (fun _ => 1)
 

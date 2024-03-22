@@ -8,7 +8,6 @@ sig Person {
     spouse  : lone Person
 }
 
-
 #check Child
 #synth Inhabited Child
 #synth Inhabited Person

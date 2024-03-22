@@ -225,9 +225,12 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
   | Expression.int.agg op expr _tok => do
     -- TODO!
     throwErrorAt _tok "TODO: int.agg"
+    -- If Finset, takes Finset.min, Finset.max, Finset.sum, etc.
   | Expression.int.sum binder expr body _tok => do
     let expr ← expr.elab env
-    let expr' ← ensureHasType (mkApp (mkConst ``Finset) expr) expr
+    let type := mkApp (mkConst ``Finset) expr
+    let expr' ← elabTerm (← PrettyPrinter.delab expr) type
+    -- let expr'' ← ensureHasType type expr'
     withLocalDeclD binder (expr) (λ fvar => do
       let body ← body.elab $ env.insert binder fvar
       let body' ← ensureHasType (mkConst ``Int) body

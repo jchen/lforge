@@ -7,15 +7,18 @@ open Lean Elab Meta Command Term
 
 namespace ForgeSyntax
 
--- This is a copy of Predicate code except output type is -> instead of
+-- This is a copy of Predicate code except output type is X -> Prop instead of Prop
 def Function.elab (f : Function) : CommandElabM Unit := do
   let env ← getEnv
+  -- Variables (binders)
   let vars ← liftTermElabM $ f.args.mapM (λ v ↦ do
     let (name, type) := v
     let v ← type.elab .empty
     pure (name, v))
-  -- Ignored for now
+  -- Output type
   let output_type ← liftTermElabM $ f.result_type.elab .empty
+
+  -- Create our body wrapped in a bunch of lambdas
   let val ← liftTermElabM $ (
     withLocalDeclsD
       (vars.toArray.map λ ⟨name, type⟩ ↦ ⟨name, λ _ ↦ pure type⟩)
@@ -28,15 +31,19 @@ def Function.elab (f : Function) : CommandElabM Unit := do
         fvars.foldrM (λ (fvar : Expr) (acc : Expr) ↦ do
           mkLambdaFVars #[fvar] acc) body)
     )
+
   let type_name_symbol_list : List (Symbol × Symbol) ← f.args.mapM (λ v ↦ match v.2 with
     | .literal l _tok => return (v.1, l)
     | _ => throwError "Expected types in predicate definition, got expressions instead." )
   let type_symbol_list : List Symbol := type_name_symbol_list.map (λ v ↦ v.2)
-  -- If output type is int, keep as int, otherwise is an α → Prop
+
+  -- If output type is int, keep as int, otherwise is an α → Prop (that is, Set α)
   let type ← liftTermElabM $ match output_type with
     | Expr.const `Int [] => namedArrowTypeOfList output_type type_name_symbol_list
     | _ => do namedArrowTypeOfList (← mkArrow output_type (mkSort levelZero)) type_name_symbol_list
+
   let val' ← liftTermElabM $ ensureHasType type val
+
   let funDecl := Declaration.defnDecl {
     name := f.name,
     levelParams := [],

@@ -16,5 +16,4 @@ syntax (name := lang_forge_bsl) "#lang forge/bsl" : command
 def lang_forge_bsl_impl : CommandElab := fun stx => do
   logInfoAt stx "Froglet is not yet supported. Certain functions such as `reachable` might not be available. Use `#lang forge` to dismiss this message."
 
-
 #eval let a := 1; a

@@ -1,4 +1,3 @@
-import Mathlib.Tactic
 import Lforge
 
 -- instance [f: Fintype α] : CoeDep Type (α : Type) (Finset α) where
@@ -11,15 +10,15 @@ sig S {
 -- instance [f: Fintype S] : Coe (S : Type) (Finset S) where
 --   coe := λ _ ↦ f.elems
 
-@[instance] axiom inhabited_s : Inhabited S
-@[instance] axiom finset_s : Fintype S
+-- @[instance] axiom inhabited_s : Inhabited S
+-- @[instance] axiom finset_s : Fintype S
 
-#synth CoeDep Type S (Finset S)
-#check (S : Finset S)
+-- #synth CoeDep Type S (Finset S)
+-- #check (S : Finset S)
 
-#check Finset.sum S (fun _ ↦ 0)
-#check Finset.sum (S : Finset S) (fun _ ↦ 0)
-#check @Finset.sum ℤ S Int.instAddCommMonoidInt S (fun _ ↦ 0)
+-- #check Finset.sum S (fun _ ↦ 0)
+-- #check Finset.sum (S : Finset S) (fun _ ↦ 0)
+-- #check @Finset.sum ℤ S Int.instAddCommMonoidInt S (fun _ ↦ 0)
 
 #lang forge
 fun test[]: Int {

@@ -26,7 +26,7 @@ inductive Sig.Multiplicity where
   `tok` points to the concrete syntax object that represents this multiplicity annotation.
   -/
   | one (tok : Syntax)
-  /-- `lone` there is never more than one object of this sig. That is, that there are zero or one. -/
+  /-- `lone` states there is never more than one object of this sig. That is, that there are zero or one. -/
   | lone (tok : Syntax)
   /-- `abstract` states that any object of this sig must also be a member of some child sig. -/
   | abstract (tok : Syntax)

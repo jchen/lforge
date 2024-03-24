@@ -2,6 +2,7 @@ import Lean
 import Lforge.Utils
 import Lforge.Ast.Types
 import Lforge.Ast.Utils
+import Lforge.Elab.TypeCheck
 import Lforge.Elab.Options
 open Lean Elab Meta Command Term System
 
@@ -104,6 +105,14 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
             -- Wraps an existential over every lambda created
             mkAppM ``Exists #[←mkLambdaFVars #[fvar] acc]) body)
     | _ =>
+      /-
+      TODO: Figure out what to do with the other quantifiers here:
+       - one/no/lone: behavior is very whack when multiple binders are implied, ie
+       ∃! x : X, ∃! y : Y, P x y
+       is different from
+       ∃! (x, y) : X × Y, P x y
+       - We have some and all right now (and in theory the others could be mimicked using this)
+      -/
       throwError "TODO quantifier unreached"
   | Formula.app name args _tok => do
     let args ← args.mapM $ Expression.elab env
@@ -219,6 +228,7 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
     -- let expr ← ensureHasType (mkApp (mkConst ``Set) (← mkFreshTypeMVar)) expr
     -- mkAppM ``Set.ncard #[expr]
     -- let set_term ← elabTerm stx (mkApp (mkConst ``Set) (← mkFreshTypeMVar))
+    -- TODO: Fix cardinality
     mkAppM ``Forge.Card.card #[expr]
   | Expression.int.agg .sing expr _tok => do
     ensureHasType (mkConst ``Int) (← expr.elab env)
@@ -233,7 +243,8 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
     -- let expr'' ← ensureHasType type expr'
     withLocalDeclD binder (expr) (λ fvar => do
       let body ← body.elab $ env.insert binder fvar
-      let body' ← ensureHasType (mkConst ``Int) body
+      let body' ← forgeEnsureHasType (mkConst ``Int) body
+      -- TODO: currently throwing "incorrect number of universe levels"
       mkAppOptM ``Finset.sum #[(mkConst ``Int), expr, none, expr', mkLambda binder BinderInfo.default (← inferType fvar) body'])
   | Expression.int.unop op expr _tok => do
     let expr ← expr.elab env

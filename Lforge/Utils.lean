@@ -189,7 +189,7 @@ class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
 -/
 infix:50 " ⋈ " => HJoin.join
 
-instance {α β : Type} [Coe ζ α] : HJoin (ζ) (α → β → Prop) (β → Prop) where
+instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
   join := fun a g ↦ g a
 
 instance {α β γ : Type} : HJoin (α) (α → β → γ → Prop) (β → γ → Prop) where
@@ -241,15 +241,21 @@ prefix:60 "^" => Relation.TransGen
 prefix:60 "*" => Relation.ReflTransGen
 
 class Card (α : Type) :=
-  (card : Set α → ℤ)
+  (card : α → ℤ)
 
 prefix:60 "#" => Card.card
 
 noncomputable instance : Card (Set α) where
   card := (Set.ncard .)
 
+noncomputable instance {α : Type} : Card (α → Prop) where
+  card := (Set.ncard .)
+
 noncomputable instance : Card (α) where
   card := fun _ ↦ 1
+
+instance [f: Fintype α] : CoeDep Type (α : Type) (α → Prop) where
+  coe := (f.elems : Set α)
 
 instance [f: Fintype α] : CoeDep Type (α : Type) (Finset α) where
   coe := f.elems

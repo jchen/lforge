@@ -4,18 +4,41 @@ Forge syntax for **fields** and **sigs**.
 
 namespace ForgeSyntax
 
-/- TODO: Documentation -/
 declare_syntax_cat f_sig_multiplicity
+/--
+`one` states that there is always exactly one object of that sig.
+-/
 syntax "one" : f_sig_multiplicity
+/--
+`lone` states there is never more than one object of this sig. That is, that there are zero or one.
+-/
 syntax "lone" : f_sig_multiplicity
+/-- `abstract` states that any object of this sig must also be a member of some child sig. -/
 syntax "abstract" : f_sig_multiplicity
 
-/- TODO: Documentation-/
 declare_syntax_cat f_field_multiplicity
+/--
+There is a single object of this field.
+
+On an arrow type `A → B`, this means that this relation contains exactly one pair of `A × B`.
+-/
 syntax "one" : f_field_multiplicity
+/--
+There is at most one object of this field.
+-/
 syntax "lone" : f_field_multiplicity
+-- TODO: Relax arity-2 condition?
+/--
+The relation **must** have arity 2. On relations from `A → B`, `pfunc` states that the relation is a partial function.
+-/
 syntax "pfunc" : f_field_multiplicity
+/--
+The relation **must** have arity 2. On relations from `A → B`, `func` states that the relation is a total function.
+-/
 syntax "func" : f_field_multiplicity
+/--
+`set` states that the relation is a set, this does not produce any additional quantifications or restraints.
+-/
 syntax "set" : f_field_multiplicity
 
 declare_syntax_cat f_field

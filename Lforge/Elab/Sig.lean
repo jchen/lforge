@@ -6,8 +6,24 @@ import Lforge.Ast.Types
 
 open Lean Elab Meta Command Term
 
-namespace ForgeSyntax
+private def space_case (s : String) : String :=
+  s.foldl
+    (λ acc c ↦
+      if c.isUpper then
+        acc ++ " ".push c.toLower
+      else
+        acc.push c)
+    ""
 
+/--
+Converts LeadingCamelCase name to underscore_case name.
+-/
+private def Lean.Name.underscored : Name → Name
+  | .str p s => .str p (String.replace (space_case s).trim " " "_")
+  | n        => n
+
+
+namespace ForgeSyntax
 def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : CommandElabM Unit := do
   let env ← getEnv
   /-
@@ -68,11 +84,16 @@ def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := do
   f.multiplicity.elab s f
 
 def Sig.Multiplicity.elab (s : Sig) (m : Sig.Multiplicity) : CommandElabM Unit := do
-  -- TODO: Resolve with children sigs
+  /-
+  TODO: Resolve with children sigs
+   - If abstract, will add an axiom that it is inhabited only by its children
+   - If one and is a leaf node, is the single Child : Parent instead of Child extends Parent.
+   - Issues a warning for user to manually constrain their sigs otherwise.
+  -/
   -- Every type ought to be inhabited
-  elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.appendBefore "inhabited_") : Inhabited $(mkIdent s.name)))
+  elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.underscored.appendBefore "inhabited_") : Inhabited $(mkIdent s.name)))
   -- Every type is finitely inhabited
-  elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.appendBefore "fintype_") : Fintype $(mkIdent s.name)))
+  elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.underscored.appendBefore "fintype_") : Fintype $(mkIdent s.name)))
 
 def Sig.elab (s : Sig): CommandElabM Unit := do
   let env ← getEnv

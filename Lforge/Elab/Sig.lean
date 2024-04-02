@@ -22,6 +22,8 @@ private def Lean.Name.underscored : Name → Name
   | .str p s => .str p (String.replace (space_case s).trim " " "_")
   | n        => n
 
+private inductive SigInheritanceTree where
+  | sigtree (s : Sig) (children : List SigInheritanceTree) (parent : Option Sig)
 
 namespace ForgeSyntax
 def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : CommandElabM Unit := do

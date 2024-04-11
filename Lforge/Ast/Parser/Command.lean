@@ -23,5 +23,4 @@ def ForgeModel.of_syntax : TSyntax `f_program → MetaM ForgeModel
       ) { sigs := [], predicates := [], functions := [] : ForgeModel}
   | _ => throwUnsupportedSyntax
 
-
 end ForgeSyntax

@@ -189,30 +189,32 @@ class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
 -/
 infix:50 " ⋈ " => HJoin.join
 
-instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
+@[reducible] instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
   join := fun a g ↦ g a
 
-instance {α β γ : Type} : HJoin (α) (α → β → γ → Prop) (β → γ → Prop) where
+@[reducible] instance {α β γ : Type} : HJoin (α) (α → β → γ → Prop) (β → γ → Prop) where
   join := fun a g ↦ g a
 
-instance {α β γ δ : Type} : HJoin (α) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
+@[reducible] instance {α β γ δ : Type} : HJoin (α) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
   join := fun a g ↦ g a
 
-instance {α β γ δ ε : Type} : HJoin (α) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
+@[reducible] instance {α β γ δ ε : Type} : HJoin (α) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
   join := fun a g ↦ g a
 
-instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
+@[reducible] instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
   join := fun l r b ↦ ∃ a : α, l a ∧ r a b
 
-instance {α β γ : Type} : HJoin (α → Prop) (α → β → γ → Prop) (β → γ → Prop) where
+@[reducible] instance {α β : Type} : HJoin (Set α) (α → β → Prop) (β → Prop) where
+  join := fun l r b ↦ ∃ a : α, l a ∧ r a b
+
+@[reducible] instance {α β γ : Type} : HJoin (α → Prop) (α → β → γ → Prop) (β → γ → Prop) where
   join := fun l r b g ↦ ∃ a : α, l a ∧ r a b g
 
-instance {α β γ δ : Type} : HJoin (α → Prop) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
+@[reducible] instance {α β γ δ : Type} : HJoin (α → Prop) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
   join := fun l r b g d ↦ ∃ a : α, l a ∧ r a b g d
 
-instance {α β γ δ ε : Type} : HJoin (α → Prop) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
+@[reducible] instance {α β γ δ ε : Type} : HJoin (α → Prop) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
   join := fun l r b g d e ↦ ∃ a : α, l a ∧ r a b g d e
-
 
 /- Cross -/
 
@@ -223,6 +225,9 @@ infix:50 " ×ᶠ " => HCross.cross
 
 instance {α β : Type} : HCross α β (α → β → Prop) where
   cross := fun a b ↦ (a, b)
+
+instance {α β : Type} : HCross α (β → Prop) (α → β → Prop) where
+  cross := fun a f a' b ↦ a = a' ∧ f b
 
 instance {α β : Type} : HCross (α → Prop) (β → Prop) (α → β → Prop) where
   cross := fun f g a b ↦ f a ∧ g b

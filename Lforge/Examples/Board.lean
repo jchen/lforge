@@ -2,22 +2,6 @@ import Lforge
 
 abstract sig Player {}
 -- one sig X, O extends Player {}
--- one sig X extends Player {}
--- one sig O extends Player {}
-
--- Do something about one sigs differently here:
--- opaque IsX : Player → Prop
--- @[reducible] def X : Type :=
---   { p : Player // IsX p }
--- @[instance] axiom inhabited_x : Inhabited X
-
--- opaque IsO : Player → Prop
--- @[reducible] def O : Type :=
---   { p : Player // IsO p }
--- @[instance] axiom inhabited_o : Inhabited O
-
-@[instance] axiom inhabited_player : Inhabited Player
-
 noncomputable opaque X : Player
 noncomputable opaque O : Player
 
@@ -92,13 +76,13 @@ pred move[pre: Board, post: Board, row: Int, col: Int, p: Player] {
 
     -- ACTION (what does the post-state then look like?)
     post.board[row][col] = p
-    all row2: Int, col2: Int | (row!=row2 or col!=col2) implies {
+    all row2: Int, col2: Int | (row != row2 or col != col2) implies {
         post.board[row2][col2] = pre.board[row2][col2]
     }
 }
 
 one sig Game {
   initialState: one Board,
-  -- next: pfunc Board -> Board
+--   next: pfunc Board -> Board,
   next: set Board -> Board
 }

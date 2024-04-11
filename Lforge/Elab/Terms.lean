@@ -13,6 +13,7 @@ namespace ForgeSyntax
 mutual
 partial def Formula.elab (env : HashMap Name Expr) (fmla : Formula) : TermElabM Expr := do
   let inner ← fmla.elab' env
+  -- The following line adds a lot of `Prop` term infos, which we're unsure whether we want.
   -- addTermInfo' fmla.tok inner
   return inner
 
@@ -112,6 +113,7 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
        is different from
        ∃! (x, y) : X × Y, P x y
        - We have some and all right now (and in theory the others could be mimicked using this)
+       - This is a 'complete' set of quantifiers technically.
       -/
       throwError "TODO quantifier unreached"
   | Formula.app name args _tok => do
@@ -238,14 +240,13 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
     -- If Finset, takes Finset.min, Finset.max, Finset.sum, etc.
   | Expression.int.sum binder expr body _tok => do
     let expr ← expr.elab env
-    let type := mkApp (mkConst ``Finset) expr
+    let type ← mkAppM ``Finset #[expr]
     let expr' ← elabTerm (← PrettyPrinter.delab expr) type
-    -- let expr'' ← ensureHasType type expr'
+    let expr'' ← ensureHasType type expr'
     withLocalDeclD binder (expr) (λ fvar => do
       let body ← body.elab $ env.insert binder fvar
       let body' ← forgeEnsureHasType (mkConst ``Int) body
-      -- TODO: currently throwing "incorrect number of universe levels"
-      mkAppOptM ``Finset.sum #[(mkConst ``Int), expr, none, expr', mkLambda binder BinderInfo.default (← inferType fvar) body'])
+      mkAppOptM ``Finset.sum #[(mkConst ``Int), expr, none, expr'', mkLambda binder BinderInfo.default (← inferType fvar) body'])
   | Expression.int.unop op expr _tok => do
     let expr ← expr.elab env
     match op with

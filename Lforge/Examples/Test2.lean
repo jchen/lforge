@@ -1,7 +1,17 @@
 import Lforge
 
--- instance [f: Fintype α] : CoeDep Type (α : Type) (Finset α) where
---   coe := f.elems
+-- opaque S : Type
+-- @[instance] axiom fintype_s : Fintype S
+
+-- instance [f: Fintype α] : CoeDep Type (α : Type) (α → Prop) where
+--   coe := (f.elems : Set α)
+
+
+
+-- opaque s : Set S
+
+-- #synth Fintype S
+
 
 sig S {
   a: one Int
@@ -20,12 +30,12 @@ sig S {
 -- #check Finset.sum (S : Finset S) (fun _ ↦ 0)
 -- #check @Finset.sum ℤ S Int.instAddCommMonoidInt S (fun _ ↦ 0)
 
-#lang forge
-fun test[]: Int {
-  sum x : S | {
-    0
-  }
-}
+-- #lang forge
+-- fun test[]: Int {
+--   sum x : S | {
+--     0
+--   }
+-- }
 
 -- #check (S : Finset S)
 -- #reduce (S : Finset S)
@@ -38,6 +48,8 @@ fun test[]: Int {
 -- def set_s := ({n1, n2} : Set S)
 
 -- #check (S : Finset S)
+
+-- #check Set.ncard
 
 -- #synth AddCommMonoid ℤ
 
@@ -62,3 +74,24 @@ fun test[]: Int {
 --   coe _ := 0
 
 -- #check add5 add5
+
+-- sig Node { edges: set Node }
+-- pred graph {
+-- some Node
+-- all a: Node | some b: Node | b in a.edges
+-- edges = ~edges
+-- no iden & edges
+-- }
+-- fun e[x: Node, y: Node] : Node -> Node { x->y + y->x }
+-- pred triangle[a: Node, b: Node, c: Node] {
+-- e[a, b] + e[a, c] + e[b, c] in edges
+-- }
+-- pred mesh {
+-- graph
+-- all a, b: Node | e[a, b] in edges => {
+-- one c: Node | triangle[a, b, c]
+-- }
+-- all a: Node | let B = a.edges | {
+-- ^(e[B, B] & edges) = e[B, B]
+-- }
+-- }

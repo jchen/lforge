@@ -12,7 +12,8 @@ namespace ForgeSyntax
 
   Argument `f?` is used only for generating error messages. -/
 def forgeEnsureHasType (expectedType? : Option Expr) (e : Expr)
-    (errorMsgHeader? : Option String := "Forge Type Error") (f? : Option Expr := none) : TermElabM Expr := do
+    (errorMsgHeader? : Option String := "Forge Type Error")
+    (f? : Option Expr := none) : TermElabM Expr := do
   let some expectedType := expectedType? | return e
   if (← isDefEq (← inferType e) expectedType) then
     return e

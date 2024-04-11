@@ -19,7 +19,7 @@ def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
       fmlas_rev.tail!.foldlM (λ acc elt ↦ do
         return .binop .and (← Formula.of_syntax elt) acc stx) init )
     return { name := name.getId, name_tok := name, args := args, body := body }
-  -- Predicate definition with arguments/bindings
+  -- Predicate definition _with_ arguments/bindings
   | `(f_pred| pred $name:ident [ $args:f_args ] { $fmla:f_fmla* }) => do
     let args ← Arguments.of_syntax args
     -- Join fmla list with `ands`. No base case, if empty, then true. Else one element.

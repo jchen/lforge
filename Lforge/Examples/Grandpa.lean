@@ -41,7 +41,7 @@ pred test2 {
 #synth Fintype Person
 
 pred isParent[x: Person, y: Person] {
-    let p = x.parent1 | y = p or y = x.parent2
+    let p = x . parent1 | y = p or y = x.parent2
 }
 
 #print isParent

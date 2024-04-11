@@ -1,0 +1,50 @@
+% !TEX root = ../paper.tex
+\newpage
+\section*{Abstract}
+
+\newpage
+\section*{Acknowledgements}
+
+\newpage
+\section*{Notation}
+Throughout the paper, you might encounter some visual or symbolic notation that is specific to this project or specific to the semantics of Forge and/or Lean. These are noted here. 
+
+``$\bowtie$'' denotes the relational join operator. If $x: A \to B$ is a relation and $y: B \to C$ is a relation, then $x\bowtie y$ produces the relation $A\to C$ merged on common values in the rightmost ($B$) column of $x$ and the leftmost ($B$) column of $y$. $x$ and $y$ can be of arbitrary arity, so long as their leftmost and rightmost columns respectively match. 
+
+Code snippets and listings have been included in this paper to serve as examples, motivation, or to provide implementation details. Where they are included, the color of the code block denotes the source language and context. 
+
+\begin{leanimpl}
+-- This is the code block for the Lean implementation of our translation
+def forgeEnsureHasType (expectedType? : Option Expr) (e : Expr)
+    (errorMsgHeader? : Option String := "Forge Type Error") 
+    (f? : Option Expr := none) : TermElabM Expr := do
+  let some expectedType := expectedType? | return e
+  if (← isDefEq (← inferType e) expectedType) then
+    return e
+  else
+    mkCoe expectedType e f? errorMsgHeader?
+\end{leanimpl}
+is an example of a Lean implementation code block. This denotes code from the implementation of the translation from Forge to Lean. This encompasses the parsing and elaboration of Forge syntax within Lean, and is most often the metaprogramming implementation of Forge in Lean. 
+
+\begin{forge}
+-- This is the code block for a snippet of a model specification in Forge
+sig Node {
+  neighbors : set Node
+}
+pred connected[a : Node, b : Node] {
+  b in a.neighbors
+}
+\end{forge}
+is an example of a Forge code block. This denotes examples of a model (or a snippet of a model) in Forge. 
+
+\begin{lean}
+-- This is the code block for the translated Lean equivalent of a Forge snippet
+opaque Node : Type
+opaque neighbors : Node → Node → Prop
+
+def connected (a : Node) (b : Node) : Prop :=
+  neighbors a b
+\end{lean}
+is an example of a Lean translation code block. This denotes examples of the translated version of a Forge model or snippet. This is oftentimes the translated Lean code that is emitted our of our program. 
+
+\newpage

@@ -5,7 +5,7 @@ set_option autoImplicit false
 
 def univ {α : Type} : Set α := fun _ ↦ True
 def none {α : Type} : Set α := fun _ ↦ False
-def iden {α : Type} : α → α := fun a ↦ a
+def iden {α : Type} : α → α → Prop := Eq
 
 namespace SigQuantifier
   def abstract (a : Type) :=

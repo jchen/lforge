@@ -2,6 +2,8 @@
 \newpage
 \section*{Abstract}
 
+We present \textsc{Lforge}, a novel tool that implements a translation of Forge, a specification language based on relational logic, into Lean 4, an interactive theorem prover with rich metaprogramming capabilities, as a domain-specific language (DSL). \textsc{Lforge} widens the scope of what is possible with a Forge specification. While Forge's automated reasoning backend is capable of generating finite examples or counterexamples, Lean's capability for manual theorem proving allows us to write general and unbounded conclusions for the same model specifications. This approach is a step in mitigating the choice paralysis and uncertainty that researchers face in selecting formal methods tools by constructing a unified workflow that combines the strengths of two vastly different formal methods systems. We also explore Lean 4's advanced syntax featuers that enable us to embed Forge as a first-class language feature within Lean. Ultimately, \textsc{Lforge} seeks to demonstrate the potential for specification portability across different tools, proposing a model for interoperability that could streamline the verification of complex systems and improve user experience in formal methods research. 
+
 \newpage
 \section*{Acknowledgements}
 
@@ -11,7 +13,7 @@ Throughout the paper, you might encounter some visual or symbolic notation that 
 
 ``$\bowtie$'' denotes the relational join operator. If $x: A \to B$ is a relation and $y: B \to C$ is a relation, then $x\bowtie y$ produces the relation $A\to C$ merged on common values in the rightmost ($B$) column of $x$ and the leftmost ($B$) column of $y$. $x$ and $y$ can be of arbitrary arity, so long as their leftmost and rightmost columns respectively match. 
 
-Code snippets and listings have been included in this paper to serve as examples, motivation, or to provide implementation details. Where they are included, the color of the code block denotes the source language and context. 
+Code snippets and listings have been included in this paper to serve as examples, motivation, or to provide implementation details. Where they are included, the color of the code block denotes the source language and context. \todo{fix according to feedback}
 
 \begin{leanimpl}
 -- This is the code block for the Lean implementation of our translation

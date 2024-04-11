@@ -2,11 +2,11 @@
 \section{Challenges and Implementation Details}
 
 \subsection{Finiteness of Forge Sigs}\label{sec:finiteness}
-Recall as summarized in \cref{sec:forge-model} that Forge Sigs get (most naturally) translated to Lean Types. However, we need to be cautious using this as a drop-in replacement for the concept of sigs. While we don't have soundness and completeness guarantees, we ought to feel confident that our translation preserves the semantic of Forge faithfully. 
+Recall as summarized in \cref{sec:forge-model} that Forge Sigs get (most naturally) translated to Lean Types. However, we need to be cautious using this as a drop-in replacement for the concept of sigs. While we don't have soundness and completeness guarantees, we ought to feel confident that our translation preserves the semantics of Forge faithfully. 
 
 One semantic difference in translating Forge Sigs into Lean Types directly is that we lose all sig `finiteness guarantees' that came with Forge. Since Forge compiles to a bounded SAT problem, all sigs are finitely bounded. This means that we can rely on the assumption that sets of sigs are all finite sets. 
 
-For example, we could write a specification of a path through a graph with one source node and claim that this path will never be injective:
+For example, we could write a specification of a path through a graph with one source node and claim that this path will never be injective:\todo{Fix this model it's incorrect!}
 \begin{forge*}
 sig Node {
   next: one Node
@@ -33,7 +33,7 @@ which gives us guarantees that \texttt{Node} is both inhabited and contains a fi
 We discuss further in \cref{sec:integers} how these instances enable us to perform integer and cardinality operations on sigs and translated Forge expressions. 
 
 
-\subsection{Inheritance}
+\subsection{Sig Inheritance and Quantifiers}
 Many signatures in Forge have complex inheritance structures \cite{jackson2012software} that cannot be expressed in Lean using a na\"ive translation. Recall that conventionally, we would translate a signature in Forge into a corresponding opaque type in Lean as follows (see \cref{sec:forge-model}):
 
 \vspace{0.5em}
@@ -119,11 +119,13 @@ axiom abstract_student : ∀ s : Student, IsUndergrad s ∨ isGrad s
 \end{lean*}
 provided both subtype instances for \texttt{Undergrad} and \texttt{Grad} have been generated correctly. 
 
+\todo{this is new, review}Such an analysis and translation of inheritance requires a global processing of the Forge program in Lean, since every expression emitted by our elaborator ought to have well-defined types and terms (that is, cannot be waiting on a term to be defined). Since Forge fields can depend on any sig, we need to `lift' sigs to define first before all fields and predicates can be defined. Furthermore, sig quantifiers and inheritance structures require preprocessing all sigs to generate a topological sort of the inheritance structure before expressing any of their translations in Lean. Since Forge is not a `local' language and all sig declarations are lifted, this was not a problem for us before we entered Lean. As such, sigs can be specified in any order. 
+
 For the remaining of sig quantifiers like \texttt{one} and \texttt{lone}, because of their complex interactions with inheritance (a \texttt{one} sig means that there is only one inhabited member of that sig that \emph{is not} any child sig, contrary to our intuition as to what a \texttt{one} or \texttt{lone} sig should be), our program prompts the user to write a customized axiom in Lean expressing their desired constraint. Note that this utilizes the seamless integration of Forge into Lean that makes such a solution of model specification `mixins' possible. Anecdotally, \texttt{one} and \texttt{lone} sigs only apply to child sigs and the \texttt{abstract} quantification is only used on parent sigs (it doesn't make sense for a non-inherited sig to be \texttt{abstract}), so we expect that manual handling of sig quantifications to be an edge case. 
 
 \subsection{``Everything is a Set''}\label{sec:everything-is-a-set}
 \subsubsection{Overloaded operations}
-The predominantly relational nature of Forge introduces another point of friction between our translation from Forge to Lean. In Forge, every expression is implicitly a relation or a set (set when that expression has arity-1). Even when we know that an expression is a relation or set with cardinality 1 (for example, it could be introduced as a binder from a quantification), they are used as if they were a singleton set in Forge expressions that expect a set as an operand. Under the hood, all expressions in Forge are treated as a set (or multi-arity relation). 
+The predominantly relational nature of Forge introduces another point of friction between our translation from Forge to Lean. In Forge, every expression is implicitly a relation or a set (set when that expression has arity-1\footnote{The notation we use is that a \texttt{Set α}, which has equivalent type \texttt{α → Prop}, has arity-1, and so on. This is the arity convention in Forge and aligns with Lean's definitions of relations.}). Even when we know that an expression is a relation or set with cardinality 1 (for example, it could be introduced as a binder from a quantification), they are used as if they were a singleton set in Forge expressions that expect a set as an operand. Under the hood, all expressions in Forge are treated as a set (or multi-arity relation). 
 
 This everything-is-a-set approach of Forge allows the following expression (within the existential quantifier), translated ``there is some \texttt{Student} who is their own friend'': 
 
@@ -147,7 +149,7 @@ opaque friends : Student → Student → Prop
 def ownFriend := 
   ∃ s : Student, 
     friends s s
-
+?\phantom{}?
 \end{lean*}
 \end{minipage}
 \vspace{0.5em}\newline
@@ -169,7 +171,7 @@ pred ownFriend[t: Student] {
 def ownFriend (t : Student) := 
   let s := friends t, 
     friends s s -- Type error!
-
+?\phantom{}?
 \end{lean*}
 \end{minipage}
 \vspace{0.5em}\newline
@@ -230,7 +232,7 @@ class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
   join := fun l r b ↦ ∃ a : α, l a ∧ r a b
 \end{leanimpl*}
 
-Then, when translating $\texttt{a}\bowtie \texttt{b}$, we can nondiscriminately produce \texttt{HJoin.join a b} and have Lean synthesize which particular implementation to apply based on the types of \texttt{a} and \texttt{b}. This allows us to have the most specific translation of an expression depending on the types of operands. 
+Then, when translating $\texttt{a}\bowtie \texttt{b}$, we can nondiscriminately produce \texttt{HJoin.join a b} and have Lean synthesize which particular implementation to apply based on the types of \texttt{a} and \texttt{b}. This allows us to have the most specific translation of an expression depending on the types of operands. \todo{mention we run then simplify to the native meaning at proof time}
 
 For many operators on expressions (see \cref{sec:join-cross-subset} below), their implementations in Lean are overloaded to accomodate the fact that Lean prefers elements when they are elements and sets only when necessary, contrasted to Forge's `everything-is-a-set' approach. This allows us to produce semantically equivalent translations that are more simplified when possible leveraging Lean's type class system that is able to determine types of operands at the time of translation. 
 
@@ -256,7 +258,7 @@ We need to take special care when implementing expression operators in Lean when
   \item There is no direct out-of-the-box translation for a Forge operation within Lean, or
   \item there are several implementations of a Forge operation in Lean, depending on the types of the operands given, and where the most generic might not necessarily be the simpliest. 
 \end{enumerate}
-We discuss (2) extensively in \cref{sec:everything-is-a-set}, and introduce using Lean's type classing system to implement varying translations of a method depending on the input types. There are several other Forge operations that require this treatment: membership, join (introduced above), cross, and equality. 
+We discuss (2) extensively in \cref{sec:everything-is-a-set}, and introduce using Lean's type class system to implement varying translations of a method depending on the input types. There are several other Forge operations that require this treatment: membership, join (introduced above), cross, and equality. 
 
 The specific operators that we needed to take special care translating, the different types that they permit, and their translations in Lean are detailed below in \cref{tab:forge-operators}. 
 
@@ -295,7 +297,7 @@ Forge and Alloy come with a unique integer model---due to the fact that models a
 
 Some programs will inadvertently (or cleverly) utilize integer overflow which affects their model in a meaningful way \cite{ngpdbccdlrrvwwk-oopsla-2024}. However, the prevailing documentation on integers in the Forge and Alloy solvers casts this effect as a necessary compromise in the design of the language architecture, and placing a bitwidth on integers is an unavoidable consequence due to the boolean formula-based backend of the language. 
 
-This is an area where Lean shines. Lean has an integer model which piggybacks on an honest-to-goodness inductive model for the natural numbers \cite{avigad2024theorem}. Lean's integer model is arbitrary precision and designed for proofwriting and numerical reasoning. This includes being able to reason about integers and write functions involving integers that are noncomputable, such as computing the cardinality of a set. 
+This is an area where Lean shines. Lean has an integer model which is defined using an honest-to-goodness inductive model for the natural numbers \cite{avigad2024theorem}. Lean's integer model is arbitrary precision and designed for proofwriting and numerical reasoning. This includes being able to reason about integers and write functions involving integers that are noncomputable, such as computing the cardinality of a set. 
 
 Here, we depart briefly from the convention that we've been following so far of reproducing Forge as accurately as possible in favor of both more extensive integer support, as well as reduced complexity in implementing integers within our translation. For the most part, we are able to use Lean's integer and finite set/types libraries out of the box with little modification. 
 

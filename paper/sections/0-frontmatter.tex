@@ -1,15 +1,43 @@
 % !TEX root = ../paper.tex
 \newpage
 \section*{Abstract}
+While formal methods are being increasingly applied in industry and are invaluable in allowing users to specify, model, and verify complex systems, the multitude of available tools offer little to no interoperability amongst each other. 
+There are no common formal methods models nor specification languages, and each tool offers precisely what its specific logical framework allows. 
+This creates a dilemma in the field that while users understand the strengths and capabilities of formal methods tools, they are often not able to select a tool appropriate for the task at hand. 
+We present \textsc{Lforge}, a tool that implements the Forge specification language via a translation process as a language-level feature of Lean. 
+\textsc{Lforge} offers a `best-of-both-worlds' approach---allowing users to no longer be constrained by the finite yet automatic resolving capabilities of Forge nor the tedious proof process of Lean.
+\textsc{Lforge} serves as an example of interfacing between two drastically different tools, thus allowing users to harness the resolving capabilities of two frameworks: Forge, an offshoot of the Alloy specification language based on a relational logic solver that can automatically prove facts about finite models; and Lean, an interactive theorem prover that allows users to prove generalized statements. 
+In doing so, \textsc{Lforge} serves as a model of what specification portability might look like across different classes of formal methods tools, as well as a model of user experience in such a translation. 
+\textsc{Lforge} is furthermore one of the first experimentations of Lean 4's rich metaprogramming capabilities. This allows \textsc{Lforge} to be a full-fledged Forge DSL within Lean with a focus on usability-first despite operating within the constraints imposed by Forge and Lean's respective formal frameworks. 
 
-We present \textsc{Lforge}, a novel tool that implements a translation of Forge, a specification language based on relational logic, into Lean 4, an interactive theorem prover with rich metaprogramming capabilities, as a domain-specific language (DSL). \textsc{Lforge} widens the scope of what is possible with a Forge specification. While Forge's automated reasoning backend is capable of generating finite examples or counterexamples, Lean's capability for manual theorem proving allows us to write general and unbounded conclusions for the same model specifications. This approach is a step in mitigating the choice paralysis and uncertainty that researchers face in selecting formal methods tools by constructing a unified workflow that combines the strengths of two vastly different formal methods systems. We also explore Lean 4's advanced syntax featuers that enable us to embed Forge as a first-class language feature within Lean. Ultimately, \textsc{Lforge} seeks to demonstrate the potential for specification portability across different tools, proposing a model for interoperability that could streamline the verification of complex systems and improve user experience in formal methods research. 
 
 \newpage
 \section*{Acknowledgements}
 
+\vfill
+
+\subsubsection*{Colophon}
+\begin{minipage}{0.7\textwidth}
+\small
+This document is typeset using \XeLaTeX\ with the \texttt{scrbook} document class. The bibliography is processed using Biblatex. Source code listings utilize the \texttt{minted} package and syntax is highlighted using \emph{Pygments}.
+\vspace{0.5em}
+
+Serif text is set in Computer Modern, sans serif text is set in \textsf{MVB Solitaire Pro}, and code is set in \texttt{\footnotesize DejaVu Sans Mono}. 
+\vspace{0.5em}
+
+No large language models were involved in the writing of this thesis.
+\end{minipage}
+
+\newpage
+{
+  \hypersetup{linkcolor=black}
+  \tableofcontents
+}
+
 \newpage
 \section*{Notation}
-Throughout the paper, you might encounter some visual or symbolic notation that is specific to this project or specific to the semantics of Forge and/or Lean. These are noted here. 
+\addcontentsline{toc}{section}{Notation}
+Throughout this paper, you might encounter some visual or symbolic notation that is specific to this project or specific to the semantics of Forge and/or Lean. These are noted here. 
 
 ``$\bowtie$'' denotes the relational join operator. If $x: A \to B$ is a relation and $y: B \to C$ is a relation, then $x\bowtie y$ produces the relation $A\to C$ merged on common values in the rightmost ($B$) column of $x$ and the leftmost ($B$) column of $y$. $x$ and $y$ can be of arbitrary arity, so long as their leftmost and rightmost columns respectively match. 
 
@@ -48,5 +76,3 @@ def connected (a : Node) (b : Node) : Prop :=
   neighbors a b
 \end{lean}
 is an example of a Lean translation code block. This denotes examples of the translated version of a Forge model or snippet. This is oftentimes the translated Lean code that is emitted our of our program. 
-
-\newpage

@@ -1,17 +1,15 @@
-\documentclass[letterpaper, 11pt, colorful, sections]{jiahua}
+\documentclass[letterpaper, 11pt, sections]{jiahua}
 \title{Title TBD}
 \author{Jiahua Chen}
 \date{April, 2024}
 
 
 \begin{document}
-\maketitle
+\include{titlepage.tex}
 \frontmatter
 \include{sections/0-frontmatter.tex}
-\tableofcontents
 
 \mainmatter
-
 \include{sections/1-introduction.tex}
 \include{sections/2-background.tex}
 \include{sections/3-motivation.tex}
@@ -21,6 +19,5 @@
 \include{sections/7-discussion.tex}
 
 \newpage
-\bibliographystyle{plain}
-\bibliography{bibliography}
+\printbibliography
 \end{document}

@@ -1,0 +1,148 @@
+{
+    "latex-workshop.latex.autoClean.run": "onBuilt",
+    "latex-workshop.latex.tools": [
+        {
+            "args": [
+                "-shell-escape",
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-outdir=%OUTDIR%",
+                "%DOC%"
+            ],
+            "command": "latexmk",
+            "env": {},
+            "name": "latexmk"
+        },
+        {
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-lualatex",
+                "-outdir=%OUTDIR%",
+                "%DOC%"
+            ],
+            "command": "latexmk",
+            "env": {},
+            "name": "lualatexmk"
+        },
+        {
+            "args": [
+                "-shell-escape",
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-xelatex",
+                "-outdir=%OUTDIR%",
+                "%DOC%"
+            ],
+            "command": "latexmk",
+            "env": {},
+            "name": "xelatexmk"
+        },
+        {
+            "args": [
+                "%DOC%"
+            ],
+            "command": "latexmk",
+            "env": {},
+            "name": "latexmk_rconly"
+        },
+        {
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "%DOC%"
+            ],
+            "command": "pdflatex",
+            "env": {},
+            "name": "pdflatex"
+        },
+        {
+            "args": [
+                "%DOCFILE%"
+            ],
+            "command": "bibtex",
+            "env": {},
+            "name": "bibtex"
+        },
+        {
+            "name": "biber",
+            "command": "biber",
+            "args": [
+                "%DOCFILE%"
+            ]
+        },
+        {
+            "args": [
+                "-e",
+                "knitr::opts_knit$set(concordance = TRUE); knitr::knit('%DOCFILE_EXT%')"
+            ],
+            "command": "Rscript",
+            "env": {},
+            "name": "rnw2tex"
+        },
+        {
+            "args": [
+                "-e",
+                "using Weave; weave(\"%DOC_EXT%\", doctype=\"tex\")"
+            ],
+            "command": "julia",
+            "env": {},
+            "name": "jnw2tex"
+        },
+        {
+            "args": [
+                "-e",
+                "using Weave; weave(\"%DOC_EXT%\", doctype=\"texminted\")"
+            ],
+            "command": "julia",
+            "env": {},
+            "name": "jnw2texminted"
+        },
+        {
+            "args": [
+                "-f",
+                "tex",
+                "%DOC_EXT%"
+            ],
+            "command": "pweave",
+            "env": {},
+            "name": "pnw2tex"
+        },
+        {
+            "args": [
+                "-f",
+                "texminted",
+                "%DOC_EXT%"
+            ],
+            "command": "pweave",
+            "env": {},
+            "name": "pnw2texminted"
+        },
+        {
+            "args": [
+                "--synctex",
+                "--keep-logs",
+                "%DOC%.tex"
+            ],
+            "command": "tectonic",
+            "env": {},
+            "name": "tectonic"
+        }
+    ],
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "xelatex -> biber -> xelatex*2",
+            "tools": [
+                "xelatexmk",
+                "biber",
+                "xelatexmk",
+                "xelatexmk"
+            ]
+        }
+    ],
+    "latex-workshop.latex.recipe.default": "lastUsed",
+}

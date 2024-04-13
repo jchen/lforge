@@ -147,10 +147,10 @@
 % For links
 \RequirePackage[
     colorlinks = true,
-    linkcolor = blue,
-    urlcolor  = blue,
-    citecolor = blue,
-    anchorcolor = blue]{hyperref}
+    linkcolor = Blue,
+    urlcolor  = Blue,
+    citecolor = Blue,
+    anchorcolor = Blue]{hyperref}
 \RequirePackage[nameinlink]{cleveref}
 
 % Underlining
@@ -403,21 +403,6 @@
 \usetikzlibrary{cd}
 \numberwithin{equation}{section}
 
-% Better source code
-% \setmonofont[
-%   Path = ./fonts/,
-%   Extension = .ttf,
-%   Ligatures=TeX,
-%   Numbers=,
-%   Scale=1,
-%   WordSpace={1,0,0},
-%   PunctuationSpace=WordSpace,
-%   UprightFont=*-Regular,
-%   ItalicFont=*-Italic,
-%   BoldFont=*-SemiBold,
-%   BoldItalicFont=*-SemiBoldItalic
-% ]{SourceCodePro}
-
 \setmonofont[
   Path = ./fonts/,
   Extension = .ttf,
@@ -431,6 +416,15 @@
   BoldFont=*-Bold,
   BoldItalicFont=*-BoldOblique
 ]{DejaVuSansMono}
+
+\setsansfont[
+  Path = ./fonts/,
+  Extension = .otf,
+  UprightFont=*,
+  ItalicFont=*-Italic,
+  BoldFont=*-Semibold,
+  BoldItalicFont=*-SemiboldItalic
+]{SolitaireMVBPro}
 
 \RequirePackage{letltxmacro}
 % https://tex.stackexchange.com/q/88001/5764
@@ -504,6 +498,21 @@
 
 % syntax
 \RequirePackage{syntax}
+
+\RequirePackage{metalogo}
+
+% Bibliography
+\RequirePackage{csquotes,xpatch}
+\RequirePackage[backend=biber,style=numeric]{biblatex}
+\addbibresource{bibliographies/google-scholar.bib}
+\addbibresource{bibliographies/additional.bib}
+
+% Table of Contents
+\BeforeTOCHead[toc]{%
+  \KOMAoptions{parskip=false}% no parskip in ToC
+  \RedeclareSectionCommand[afterskip=1sp minus 1sp]{section}% no skip after ToC title
+}\DeclareTOCStyleEntry[beforeskip=1em, entryformat=\bfseries]{section}{section}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% macros %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\recall}{\textit{Recall:} }

@@ -37,3 +37,7 @@
 *.synctex(busy)
 _minted-paper
 .vscode
+
+# Install fonts, these are from Adobe Fonts :( [licensed]
+fonts/SolitaireMVBPro*
+fonts/Lemance-*

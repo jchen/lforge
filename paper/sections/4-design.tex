@@ -69,9 +69,13 @@ structure Predicate where
 The associated structure definitions of the Forge AST is a deep embedding of Forge into Lean. Using this, we can implement a translation of our Forge model into native Lean expressions and types. 
 
 \subsection{Elaboration}\label{sec:elaboration}
+
+Elaboration in Lean 4 processes Lean \texttt{Syntax} objects, which are the outputs of the Lean parser, into Lean \texttt{Expr} objects, which are Lean's low-level kernel representations \cite{metaprogramming}. Elaboration is responsible for Lean's type and metavariable unification\footnote{That is, types are inferred, coerced, and type classes resolved at this step. Types, including implicit types, and must be fully specified within \texttt{Expr} objects.}, which provides all the type information to Lean. 
+
+Expressions  also rewrites bound variables using De Bruijn indices. 
 \todo{Complete}
 
 \subsection{The Forge Model in Lean}\label{sec:forge-model}
-\todo{Complete}
+\todo{Complete, this is mostly a table of Forge concepts and translations in Lean.}
 
 % Table of things in Forge and their translation in Lean

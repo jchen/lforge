@@ -2,7 +2,7 @@
 \section{Challenges and Implementation Details}
 
 \subsection{Finiteness of Forge Sigs}\label{sec:finiteness}
-Recall as summarized in \cref{sec:forge-model} that Forge Sigs get (most naturally) translated to Lean Types. However, we need to be cautious using this as a drop-in replacement for the concept of sigs. While we don't have soundness and completeness guarantees, we ought to feel confident that our translation preserves the semantics of Forge faithfully. 
+Recall as summarized in \cref{sec:forge-model} that Forge Sigs get (most naturally) translated to Lean Types. However, we need to be cautious using this as a drop-in replacement for the concept of sigs. While we don't have soundness and completeness guarantees, we ought to feel confident that our translation preserves the semantics of Forge faithfully. \todo{SK: I'm curious about this statement; it at least deserves elaboration. I see no reason why we can't get some kinds of formal guarantees, since we're going from a formalized object to a formalized object.}
 
 One semantic difference in translating Forge Sigs into Lean Types directly is that we lose all sig `finiteness guarantees' that came with Forge. Since Forge compiles to a bounded SAT problem, all sigs are finitely bounded. This means that we can rely on the assumption that sets of sigs are all finite sets. 
 
@@ -21,7 +21,7 @@ For any number of \texttt{Node} sigs we initialize Forge with (that is, for any 
 
 Yet, in the Lean formulation of this specification, we realize that \texttt{notInjective} need not be true at all. If we tried to prove the same in Lean, we realize that it isn't actually possible to prove the injectivity of our next relation. In fact, if we conjured our type \texttt{Node} with the same structure as $\NN$, we would have a perfectly valid \texttt{next} function (think \texttt{succ}) that is not injective. 
 
-The disparity between the Forge and Lean models is that while Forge models are finitely inhabited (albeit, arbitrarily so), Lean makes no assumption about the size of models or types and requires explicit statements of finiteness of types. Pertaining to the example above, we would want to be able to prove the nonexistence of such an injective function using the translated facts produced by our module. 
+The disparity between the Forge and Lean models is that while Forge models are finitely inhabited (albeit, arbitrarily so), Lean makes no assumption about the size of models or types and requires explicit statements of finiteness of types. Pertaining to the example above, we would want to be able to prove the nonexistence of such an injective function using the translated facts produced by our module. \todo{SK: I think there are two things being conflated here: domain bounds and finiteness. Domain bounds obviously imply finiteness but not vice versa.}
 
 Our solution is to include additional local instance axioms for every opaque sig that is translated from Forge and introduced to our Lean environment. In this case: 
 \begin{lean*}
@@ -295,7 +295,7 @@ Cross: \texttt{a->b}                & \texttt{a->b}   & \texttt{(a, b)}         
 \subsection{Integers}\label{sec:integers}
 Forge and Alloy come with a unique integer model---due to the fact that models are compiled down to boolean constraints to be solved by a SAT solver, integers are severely limited in their bitwidth \cite{jackson2012software,nelson2024artifact}. The default bitwidth on integers in Forge is $4$, which gives us a grand total of $16$ integers. 
 
-Some programs will inadvertently (or cleverly) utilize integer overflow which affects their model in a meaningful way \cite{ngpdbccdlrrvwwk-oopsla-2024}. However, the prevailing documentation on integers in the Forge and Alloy solvers casts this effect as a necessary compromise in the design of the language architecture, and placing a bitwidth on integers is an unavoidable consequence due to the boolean formula-based backend of the language. 
+Some programs will inadvertently utilize integer overflow which affects their model in a meaningful ways, oftentimes counterintuitively \cite[22]{ngpdbccdlrrvwwk-oopsla-2024}. However, the prevailing documentation on integers in the Forge and Alloy solvers casts this effect as a necessary compromise in the design of the language architecture, and placing a bitwidth on integers is an unavoidable consequence due to the boolean formula-based backend of the language. 
 
 This is an area where Lean shines. Lean has an integer model which is defined using an honest-to-goodness inductive model for the natural numbers \cite{avigad2024theorem}. Lean's integer model is arbitrary precision and designed for proofwriting and numerical reasoning. This includes being able to reason about integers and write functions involving integers that are noncomputable, such as computing the cardinality of a set. 
 

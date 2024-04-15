@@ -86,16 +86,17 @@ def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := do
   f.multiplicity.elab s f
 
 def Sig.Multiplicity.elab (s : Sig) (m : Sig.Multiplicity) : CommandElabM Unit := do
-  /-
-  TODO: Resolve with children sigs
-   - If abstract, will add an axiom that it is inhabited only by its children
-   - If one and is a leaf node, is the single Child : Parent instead of Child extends Parent.
-   - Issues a warning for user to manually constrain their sigs otherwise.
-  -/
   -- Every type ought to be inhabited
   elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.underscored.appendBefore "inhabited_") : Inhabited $(mkIdent s.name)))
   -- Every type is finitely inhabited
   elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.underscored.appendBefore "fintype_") : Fintype $(mkIdent s.name)))
+  match m with
+  | .one tok =>
+    elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.underscored.appendBefore "one_") : SigQuantifier.One $(mkIdent s.name)))
+    liftTermElabM $ addTermInfo' tok (mkConst $ s.name.underscored.appendBefore "one_")
+  | .lone tok =>
+    logInfoAt tok m!"Lforge does not currently support the lone quantifier, since all types currently default to being inhabited. You might want to consider using `one` or `abstract` instead."
+  | _ => return
 
 def Sig.elab (s : Sig): CommandElabM Unit := do
   let env ← getEnv
@@ -103,9 +104,9 @@ def Sig.elab (s : Sig): CommandElabM Unit := do
   | .none =>
     let sigDecl := Declaration.opaqueDecl {
       name := s.name,
-      value := mkSort levelZero,
+      value := .sort levelZero,
       levelParams := [],
-      type := mkSort levelOne,
+      type := .sort levelOne,
       isUnsafe := False,
     }
     match env.addDecl sigDecl with
@@ -118,18 +119,82 @@ def Sig.elab (s : Sig): CommandElabM Unit := do
       throwErrorAt s.name_tok ex.toMessageData (← getOptions)
     s.quantifier.elab s
   | some a => do
-    elabCommand (← `(opaque $(mkIdent $ s.name.appendBefore "Is") : $(mkIdent a) → Prop))
-    let first_char := (s.name.getString!.get! 0).toString
-    elabCommand (← `(@[reducible] def $(mkIdent $ s.name) : Type := { $(mkIdent first_char) : $(mkIdent a) // $(mkIdent $ s.name.appendBefore "Is") $(mkIdent first_char) }))
-    s.quantifier.elab s
+    match s.quantifier with
+    | .one tok =>
+      if s.fields.isEmpty then
+        throwErrorAt tok m!"Sig '{s.name}' has no fields."
+        -- TODO: Make this generate an noncomputable opaque sig
+    | _ =>
+      elabCommand (← `(opaque $(mkIdent $ s.name.appendBefore "Is") : $(mkIdent a) → Prop))
+      let first_char := (s.name.getString!.get! 0).toString
+      elabCommand (← `(@[reducible] def $(mkIdent $ s.name) : Type := { $(mkIdent first_char) : $(mkIdent a) // $(mkIdent $ s.name.appendBefore "Is") $(mkIdent first_char) }))
+      s.quantifier.elab s
+      liftTermElabM $ addTermInfo' s.name_tok (mkConst s.name)
+
+/--
+Toposort the sigs based on inheritance structure, based on Sig's ancestor field.
+-/
+def orderSigs (sigs : List Sig) : List Sig := do
+  let mut sigs := sigs
+  let mut orderedSigs := []
+  while sigs.length > 0 do
+    let (ordered, unordered) := sigs.partition (λ s ↦ s.ancestor == .none ∨ orderedSigs.any (λ os ↦ os.name == s.ancestor))
+    orderedSigs := orderedSigs ++ ordered
+    sigs := unordered
+  orderedSigs
+
+/--
+Gets a list of ⟨abstract_sig, list of children⟩ pairs.
+-/
+def getChildrenOfAbstract (sigs : List Sig) : List (Sig × List Sig) := do
+  sigs.filterMap (λ s ↦
+    match s.quantifier with
+    | .abstract _ => some (s, sigs.filter (λ c ↦ c.ancestor == s.name))
+    | _ => none)
+
+/--
+Adds `abstract_[sig] : ∀ [first character] : [sig], Is[ChildSig1] _ ∨ Is[ChildSig2] _`
+-/
+def processAbstractSigs (abstract_sigs : List (Sig × List Sig)) : CommandElabM Unit := do
+  abstract_sigs.forM (λ ⟨s, children⟩ ↦ do
+  -- If there are no children, add an error to abstract tok
+    if children.isEmpty then
+      throwErrorAt s.name_tok m!"Abstract sig '{s.name}' has no children."
+    else
+      let childrenName ← children.mapM (λ c ↦ liftTermElabM $ mkConst $ c.name.appendBefore "Is")
+      let binderName := (s.name.getString!.get! 0).toString.toLower
+      let statement ← liftTermElabM $ withLocalDeclD binderName (mkConst s.name) (λ fvar ↦ do
+          let orList ← childrenName.tail!.foldrM (λ c acc ↦
+            mkAppM ``Or #[mkApp c fvar, acc])
+            (mkApp childrenName.head! fvar)
+          mkForallFVars #[fvar] orList)
+      let name := (s.name.underscored.appendBefore "abstract_")
+      let decl := Declaration.axiomDecl {
+        name := name,
+        levelParams := [],
+        type := statement,
+        isUnsafe := False,
+      }
+      let env ← getEnv
+      match env.addDecl decl with
+      | Except.ok env => do
+        if (← getOptions).getBool `forge.hints .false then
+          logInfo m!"axiom {name} : {statement}"
+        setEnv env
+        match s.quantifier with
+        | .abstract tok =>
+          liftTermElabM $ addTermInfo' tok (mkConst name)
+        | _ => unreachable!
+      | Except.error ex =>
+        throwError ex.toMessageData (← getOptions))
 
 /--
 We need to elaborate all top-level sigs before all fields can be elaborated,
 so `Sig.lift_and_elab_multiple` will elab all Sigs and then all of their fields.
 -/
 def Sig.lift_and_elab_multiple (sigs : List Sig) : CommandElabM Unit := do
-  -- TODO: Make dependency DAG
-  sigs.forM Sig.elab
+  (sigs |> orderSigs).forM Sig.elab
+  processAbstractSigs (getChildrenOfAbstract sigs)
   sigs.forM (λ s ↦ s.fields.forM (Field.elab s))
 
 end ForgeSyntax

@@ -1,9 +1,8 @@
 import Lforge
-
 #lang forge
 
 sig Person {
-  shaves: set Person
+  shaves: one Person
 }
 
 pred shavesThemselves[p: Person] {

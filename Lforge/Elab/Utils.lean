@@ -14,7 +14,7 @@ def arrowTypeOfList (types : List Symbol) : TermElabM Expr := do
   match types with
   | [] =>
     -- Prop
-    pure (mkSort levelZero)
+    pure (.sort levelZero)
     -- α → β → ... → Prop
   | type :: rest =>
     mkArrow (mkConst type) (← arrowTypeOfList rest)
@@ -26,7 +26,7 @@ def namedPropArrowTypeOfList (types : List (Symbol × Symbol)) : TermElabM Expr 
   match types with
   | [] =>
     -- Prop
-    pure (mkSort levelZero)
+    pure (.sort levelZero)
     -- α → β → ... → Prop
   | ⟨name, type⟩ :: rest =>
     return .forallE name (mkConst type) (← namedPropArrowTypeOfList rest) .default

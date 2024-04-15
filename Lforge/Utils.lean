@@ -1,23 +1,20 @@
 import Mathlib.Tactic
 import Mathlib.Logic.Relation
 import Mathlib.Data.Set.Card
-set_option autoImplicit false
+set_option autoImplicit true
 
 def univ {α : Type} : Set α := fun _ ↦ True
 def none {α : Type} : Set α := fun _ ↦ False
 def iden {α : Type} : α → α → Prop := Eq
 
 namespace SigQuantifier
-  def abstract (a : Type) :=
-    IsEmpty a
-
-  def one (a : Type) :=
-    Singleton a
-
-  def lone (a : Type) :=
-    Subsingleton a
-
+  class One (α : Type) :=
+    one : α
+    allEq : ∀ x : α, x = one
 end SigQuantifier
+
+instance [o: SigQuantifier.One α] : CoeDep Type (α : Type) α where
+  coe := o.one
 
 namespace ExprQuantifier
   def one {a : Type} (f : a → Prop) :=
@@ -53,11 +50,11 @@ namespace FieldQuantifier
   def lone {α β : Type} (f : α → β → Prop) :=
     ∀ a : α, ExprQuantifier.lone (f a ·)
 
-  def pfunc {α β γ : Type} (f : α → (β × γ) → Prop) :=
-    ∀ a : α, ∀ b : β, ExprQuantifier.lone (f a <| Prod.mk b ·)
+  def pfunc {α β γ : Type} (f : α → β → γ → Prop) :=
+    ∀ a : α, ∀ b : β, ExprQuantifier.lone (f a b ·)
 
-  def func {α β γ : Type} (f : α → (β × γ) → Prop) :=
-    ∀ a : α, ∀ b : β, ExprQuantifier.one (f a <| Prod.mk b ·)
+  def func {α β γ : Type} (f : α → β → γ → Prop) :=
+    ∀ a : α, ∀ b : β, ExprQuantifier.one (f a b ·)
 
 end FieldQuantifier
 
@@ -70,7 +67,6 @@ inductive Relation.Transpose {α β : Type} (r : α → β → Prop) : β → α
 
 def transpose {α β : Type} : (α × β) → (β × α) := Prod.swap
 
-set_option autoImplicit true
 
 /- Coercions -/
 -- We do all these first because we use these coercions later below
@@ -162,6 +158,9 @@ infix:60 " =ᶠ " => HEq.eq
   eq := Eq
 
 @[reducible] instance {α : Type} : HEq (α → Prop) (α → Prop) where
+  eq := Eq
+
+@[reducible] instance {α : Type} : HEq (α → Prop) (Set α) where
   eq := Eq
 
 /- Transpose -/

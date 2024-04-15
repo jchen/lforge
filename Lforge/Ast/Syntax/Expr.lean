@@ -137,4 +137,6 @@ syntax:91 "divide[" f_expr,+ "]" : f_expr
 -/
 syntax:91 "remainder[" f_expr "," f_expr "]" : f_expr
 
+-- TODO: Syntax for Lforge-specific casting?
+
 end ForgeSyntax

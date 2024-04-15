@@ -40,7 +40,7 @@ def Function.elab (f : Function) : CommandElabM Unit := do
   -- If output type is int, keep as int, otherwise is an α → Prop (that is, Set α)
   let type ← liftTermElabM $ match output_type with
     | Expr.const `Int [] => namedArrowTypeOfList output_type type_name_symbol_list
-    | _ => do namedArrowTypeOfList (← mkArrow output_type (mkSort levelZero)) type_name_symbol_list
+    | _ => do namedArrowTypeOfList (← mkArrow output_type (.sort levelZero)) type_name_symbol_list
 
   let val' ← liftTermElabM $ ensureHasType type val
 

@@ -48,8 +48,8 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
     | Formula.ExprUnOp.lone => mkAppM ``ExprQuantifier.lone #[expr]
     | Formula.ExprUnOp.one => mkAppM ``ExprQuantifier.one #[expr]
   | Formula.expr_binop op expr_a expr_b _ => do
-    let expr_a ← expr_a.elab env
-    let expr_b ← expr_b.elab env
+    let expr_a ← expr_a.elab env true
+    let expr_b ← expr_b.elab env true
     match op with
     | Formula.ExprBinOp.in => mkAppM ``Forge.HIn.subset #[expr_a, expr_b]
     | Formula.ExprBinOp.eq => mkAppM ``Forge.HEq.eq #[expr_a, expr_b]
@@ -69,7 +69,7 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
       let expr_a_type ← ensureHasType (mkConst ``Int) expr_a
       let expr_b_type ← ensureHasType (mkConst ``Int) expr_b
       mkAppM op #[expr_a, expr_b]
-  | Formula.quantifier quantification vars fmla _tok => do
+  | Formula.quantifier quantification vars fmla tok => do
     let vars ← vars.mapM (λ v ↦ do
       let (name, type) := v
       let v ← type.elab env
@@ -112,10 +112,10 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
        ∃! x : X, ∃! y : Y, P x y
        is different from
        ∃! (x, y) : X × Y, P x y
-       - We have some and all right now (and in theory the others could be mimicked using this)
+       - We have `some` and `all` right now (and in theory the others could be mimicked using this)
        - This is a 'complete' set of quantifiers technically.
       -/
-      throwError "TODO quantifier unreached"
+      throwErrorAt tok "Quantifiers aside from `some` and `all` are not yet supported due to their complexity and potential ambiguity, please rewrite this into an equivalent statement using universal and existential quantifications."
   | Formula.app name args _tok => do
     let args ← args.mapM $ Expression.elab env
     addTermInfo' _tok (mkConst name)
@@ -131,12 +131,12 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
   | Formula.true _ => mkConst ``True
   | Formula.false _ => mkConst ``False
 
-partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : TermElabM Expr := do
-  let inner ← expr.elab' env
+partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) (coe : Bool := false) : TermElabM Expr := do
+  let inner ← expr.elab' env coe
   addTermInfo' expr.tok inner
   return inner
 
-partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : TermElabM Expr :=
+partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) (coe : Bool := false) : TermElabM Expr :=
   match expr with
   | Expression.unop op expr _tok => do
     let expr ← expr.elab env
@@ -205,12 +205,27 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
     -- Resolves all the names to constants, either in lean environment or our own
     let resolved_names ← names.mapM (λ value ↦ do
       -- Simple lookup and errors if not found
-      match (← getEnv).find? value with
+      let resolved_name ← match (← getEnv).find? value with
       | .some _ => Term.mkConst value
       | .none =>
+        -- Checks in our constructed environment for variables
         match env.find? value with
         | .some e => pure e
-        | .none => throwErrorAt tok m!"'{value}' is not defined in scope")
+        | .none => throwErrorAt tok m!"'{value}' is not defined in scope"
+      if coe then
+        let resolved_type ← inferType resolved_name
+        if (← isDefEq resolved_type (.sort levelOne)) then
+          -- TODO: Fix this...how do we want to handle the types here?
+          -- logInfoAt tok m!"Coercing {value} to a function"
+          let arrow_type ← mkArrow resolved_name (.sort levelZero)
+          let resolved_expr ← elabTerm (← PrettyPrinter.delab resolved_name) arrow_type
+          ensureHasType arrow_type resolved_expr
+        else
+          -- logInfoAt tok m!"Not coercing {value}"
+          pure resolved_name
+      else
+        pure resolved_name
+      )
     -- Folds over the resolved names, joining them all together
     resolved_names.tail!.foldr
       (λ elt acc ↦ do mkAppM ``Forge.HJoin.join #[← acc, elt] ) (pure resolved_names.head!)
@@ -253,8 +268,8 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
     | .abs => mkAppM ``Int.natAbs #[expr]
     | .sgn => mkAppM ``Int.sign #[expr]
   | Expression.int.binop .mod expr_a expr_b _tok => do
-    let expr_a ← expr_a.elab env
-    let expr_b ← expr_b.elab env
+    let expr_a ← expr_a.elab env true
+    let expr_b ← expr_b.elab env true
     mkAppM ``Int.mod #[expr_a, expr_b]
   | Expression.int.mulop op exprs _tok => do
     let exprs ← exprs.mapM (λ e ↦ e.elab env)

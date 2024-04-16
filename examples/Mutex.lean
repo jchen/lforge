@@ -51,7 +51,7 @@ pred delta[pre: State, post: State] {
 
 pred good[s: State] {
   all p: Process | (s.loc[p] = InCS or s.loc[p] = Waiting) implies p in s.flags
-  #{p: Process | s.loc[p] = InCS} <= 1
+  lone {p: Process | s.loc[p] = InCS}
 }
 
 pred startGoodTransition[s1, s2: State] {
@@ -64,9 +64,181 @@ pred properties {
   all pre, post : State | startGoodTransition[pre, post] => good[post]
 }
 
+-------- Proofs --------
+
 theorem init_good : ∀ s : State, init s → good s := by
+  intro s his
+  simp [init] at his
+  simp [good]
+  -- simp only [Forge.HJoin.join, Forge.HEq.eq]
+  -- simp only [Forge.HJoin.join, Forge.HEq.eq] at his
+  cases' his with h_all h_no_flags
+  constructor
+  {
+    intro p h_p_state
+    rcases h_p_state with ⟨hl⟩ | ⟨hr⟩
+    rw [h_all p] at hl
+    simp at hl
+    rw [h_all p] at hr
+    simp at hr
+  }
+  {
+    rw [ExprQuantifier.lone, ExprQuantifier.no, ExprQuantifier.one]
+    right
+    refine Set.ext ?intro.right.h.h
+    intro hp
+    constructor
+    {
+      tauto
+    }
+    {
+      intro hpin
+      simp only [Membership.mem, Set.Mem] at hpin
+      rw [h_all hp] at hpin
+      simp at hpin
+    }
+  }
+  done
+
+theorem raise_transition_good (pre : State) (post : State) (g : good pre) : raise pre p post → good post := by
+  intro hpre
+  simp [good] at g
+  rcases g with ⟨h_flags_pre, h_lock_pre⟩
+  simp [raise] at hpre
+  rcases hpre with ⟨h_pre_uninterested, h_post_waiting, h_flags, h_invariant⟩
+  -- Helper for us to split on
+  have h_p_p' : ∀ p' : Process, p' = p ∨ p' ≠ p := by tauto
+  simp [good]
+  constructor
+  {
+    -- Flags are preserved
+    intro p'
+    rw [h_flags]
+    rcases h_p_p' p' with heq | hneq
+    {
+      -- p' is p
+      intro _
+      rw [heq]
+      tauto
+    }
+    {
+      -- p' isn't p, then loc post is unchanged
+      have h_loc_invariant := h_invariant p' hneq
+      rw [h_loc_invariant]
+      intro h_pre_in_or_waiting
+      have := h_flags_pre p' h_pre_in_or_waiting
+      tauto
+    }
+  }
+  {
+    -- Only one proc has the lock
+    have heq : (fun p ↦ loc pre p = InCS) = (fun p ↦ loc post p = InCS)
+    {
+      refine (funext ?heq.h).symm
+      intro p'
+      rcases h_p_p' p' with heq | hneq
+      {
+        -- Absurd
+        rw [heq, h_post_waiting, h_pre_uninterested]
+        simp
+      }
+      {
+        -- Post and pre state same
+        have h_loc_invariant := h_invariant p' hneq
+        tauto
+      }
+    }
+    rw [←heq]
+    exact h_lock_pre
+  }
+  done
+
+theorem raise_transition_good2 (pre : State) (post : State) (g : good pre) : raise pre p post → good post := by
+  intro hraise
+  simp [good, ExprQuantifier.lone]
+  simp [good, ExprQuantifier.lone] at g
+  rcases g with ⟨h_in_waiting, h_lone⟩
+  simp [raise] at hraise
+  rcases hraise with ⟨h_p_pre_uninterested, h_p_post_waiting, h_flags_pre_post, h_others_still⟩
+  constructor
+  {
+    intro p' h_p_state
+    rw [h_flags_pre_post]
+    have h_post_in_waiting := h_in_waiting p'
+    rcases h_p_state with h_p'_in_cs | h_p'_waiting
+    {
+      have hex : p' = p ∨ ¬p' = p := by tauto
+      rcases hex with hl | hr
+      {
+        rw [hl]
+        tauto
+      }
+      {
+        have h_p'_unchanged := h_others_still p' hr
+        rw [h_p'_in_cs] at h_p'_unchanged
+        have h_flags_pre_p' : flags pre p'
+        {
+          apply h_in_waiting
+          left
+          tauto
+        }
+        tauto
+      }
+    }
+    {
+      have hex : p' = p ∨ ¬p' = p := by tauto
+      rcases hex with hl | hr
+      {
+        rw [hl]
+        tauto
+      }
+      {
+        have h_p'_unchanged := h_others_still p' hr
+        rw [h_p'_waiting] at h_p'_unchanged
+        have h_flags_pre_p' : flags pre p'
+        {
+          apply h_in_waiting
+          right
+          tauto
+        }
+        tauto
+      }
+    }
+  }
+  {
+    have heq : (fun p ↦ loc pre p = InCS) = (fun p ↦ loc post p = InCS)
+    {
+      {
+        refine (funext ?heq.h).symm
+        intro p''
+        have hex : p'' = p ∨ ¬p'' = p := by tauto
+        rcases hex with h_left | h_right
+        rw [h_left, h_p_pre_uninterested, h_p_post_waiting]
+        simp
+        tauto
+      }
+    }
+    rw [←heq]
+    cases' h_lone with hone hnone
+    {
+      left
+      exact hone
+    }
+    {
+      right
+      exact hnone
+    }
+  }
+  done
+
+theorem enter_transition_good (pre : State) (post : State) (g : good pre) : enter pre p post → good post := by
   sorry
   done
+
+theorem leave_transition_good (pre : State) (post : State) (g : good pre) : leave pre p post → good post := by
+  sorry
+  done
+
 
 example : properties := by
   rw [properties]
@@ -75,10 +247,19 @@ example : properties := by
     exact init_good
   }
   {
-    intro pre post h_good_transition
-    cases' h_good_transition with h_good_pre h_delta
-    cases' h_good_pre with h_good_flags h_good_num_waiting
-    cases' h_delta with p h_transition
-    sorry
+    intro pre post hstart
+    simp [startGoodTransition] at hstart
+    -- simp [good]
+    -- simp [good, delta, Forge.HJoin.join, Forge.HEq.eq, Forge.HIn.subset] at hstart
+    rcases hstart with ⟨h, ⟨p, ⟨hraise⟩ | ⟨henter⟩ | ⟨hleave⟩⟩⟩
+    {
+      exact raise_transition_good pre post h hraise
+    }
+    {
+      sorry
+    }
+    {
+      sorry
+    }
   }
   done

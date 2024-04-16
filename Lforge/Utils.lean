@@ -3,9 +3,9 @@ import Mathlib.Logic.Relation
 import Mathlib.Data.Set.Card
 set_option autoImplicit true
 
-def univ {α : Type} : Set α := fun _ ↦ True
-def none {α : Type} : Set α := fun _ ↦ False
-def iden {α : Type} : α → α → Prop := Eq
+@[reducible, simp] def univ {α : Type} : Set α := fun _ ↦ True
+@[reducible, simp] def none {α : Type} : Set α := fun _ ↦ False
+@[reducible, simp] def iden {α : Type} : α → α → Prop := Eq
 
 namespace SigQuantifier
   class One (α : Type) :=
@@ -13,60 +13,56 @@ namespace SigQuantifier
     allEq : ∀ x : α, x = one
 end SigQuantifier
 
-instance [o: SigQuantifier.One α] : CoeDep Type (α : Type) α where
+@[reducible, simp] instance [o: SigQuantifier.One α] : CoeDep Type (α : Type) α where
   coe := o.one
 
 namespace ExprQuantifier
-  def one {a : Type} (f : a → Prop) :=
-    ∃! x : a, f = Set.singleton x
+@[reducible, simp] def one {a : Type} (f : a → Prop) :=
+  ∃! x : a, f = Set.singleton x
 
-  def no {a : Type} (f : a → Prop) :=
-    (∅ : Set a) = f
+@[reducible, simp] def no {a : Type} (f : a → Prop) :=
+  (∅ : Set a) = f
 
-  def lone {a : Type} (f : a → Prop) :=
-    one f ∨ no f
+@[reducible, simp] def lone {a : Type} (f : a → Prop) :=
+  one f ∨ no f
 
-  def some {a : Type} (f : a → Prop) :=
-    ∃ t : a, f t
-
+@[reducible, simp] def some {a : Type} (f : a → Prop) :=
+  ∃ t : a, f t
 end ExprQuantifier
 
 namespace ExprCmp
-  def subset {a : Type} (f g : Set a) :=
-    ∀ t : a, t ∈ f → t ∈ g
+@[reducible, simp] def subset {a : Type} (f g : Set a) :=
+  ∀ t : a, t ∈ f → t ∈ g
 
-  def eq {a : Type} (f g : a → Prop) :=
-    ∀ t : a, f t ↔ g t
-
+@[reducible, simp] def eq {a : Type} (f g : a → Prop) :=
+  ∀ t : a, f t ↔ g t
 end ExprCmp
 
 namespace FieldQuantifier
-  def one {α β : Type} (f : α → β → Prop) :=
-    ∀ a : α, ExprQuantifier.one (f a ·)
+@[reducible, simp] def one {α β : Type} (f : α → β → Prop) :=
+  ∀ a : α, ExprQuantifier.one (f a ·)
 
-  def no {α β : Type} (f : α → β → Prop) :=
-    ∀ a : α, ExprQuantifier.no (f a ·)
+@[reducible, simp] def no {α β : Type} (f : α → β → Prop) :=
+  ∀ a : α, ExprQuantifier.no (f a ·)
 
-  def lone {α β : Type} (f : α → β → Prop) :=
-    ∀ a : α, ExprQuantifier.lone (f a ·)
+@[reducible, simp] def lone {α β : Type} (f : α → β → Prop) :=
+  ∀ a : α, ExprQuantifier.lone (f a ·)
 
-  def pfunc {α β γ : Type} (f : α → β → γ → Prop) :=
-    ∀ a : α, ∀ b : β, ExprQuantifier.lone (f a b ·)
+@[reducible, simp] def pfunc {α β γ : Type} (f : α → β → γ → Prop) :=
+  ∀ a : α, ∀ b : β, ExprQuantifier.lone (f a b ·)
 
-  def func {α β γ : Type} (f : α → β → γ → Prop) :=
-    ∀ a : α, ∀ b : β, ExprQuantifier.one (f a b ·)
-
+@[reducible, simp] def func {α β γ : Type} (f : α → β → γ → Prop) :=
+  ∀ a : α, ∀ b : β, ExprQuantifier.one (f a b ·)
 end FieldQuantifier
 
-def reachable {α : Type} (a1 a2 : α) (r : α → α → Prop) : Prop :=
+@[reducible, simp] def reachable {α : Type} (a1 a2 : α) (r : α → α → Prop) : Prop :=
   Relation.TransGen r a1 a2
 
 @[mk_iff transpose_iff]
 inductive Relation.Transpose {α β : Type} (r : α → β → Prop) : β → α → Prop
   | mk {a} {b} : r a b → Relation.Transpose r b a
 
-def transpose {α β : Type} : (α × β) → (β × α) := Prod.swap
-
+@[reducible, simp] def transpose {α β : Type} : (α × β) → (β × α) := Prod.swap
 
 /- Coercions -/
 -- We do all these first because we use these coercions later below
@@ -120,16 +116,16 @@ class HIn (α : Type) (β : Type) :=
 -/
 infix:60 " ⊂ᶠ " => HIn.subset
 
-instance [Coe α β] : HIn α (Set β) where
+@[reducible, simp] instance [Coe α β] : HIn α (Set β) where
   subset := fun elt s ↦ s elt
 
-instance : HIn α (α → Prop) where
+@[reducible, simp] instance : HIn α (α → Prop) where
   subset := fun elt s ↦ s elt
 
-instance [HasSubset α] : HIn (Set α) (Set α) where
+@[reducible, simp] instance [HasSubset α] : HIn (Set α) (Set α) where
   subset := HasSubset.Subset
 
-instance {α β : Type} : HIn (α → β → Prop) (α → β → Prop) where
+@[reducible, simp] instance {α β : Type} : HIn (α → β → Prop) (α → β → Prop) where
   subset := fun f g ↦ ∀ a b, f a b → g a b
 
 /- Eq -/
@@ -142,25 +138,25 @@ class HEq (α : Type) (β : Type) :=
 -/
 infix:60 " =ᶠ " => HEq.eq
 
-@[reducible] instance [HEq α β] : HEq β α where
+@[reducible, simp] instance [HEq α β] : HEq β α where
   eq := fun s1 s2 ↦ HEq.eq s2 s1
 
-@[reducible] instance : HEq α α where
+@[reducible, simp] instance : HEq α α where
   eq := Eq
 
-@[reducible] instance : HEq α (Set α) where
+@[reducible, simp] instance : HEq α (Set α) where
   eq := fun s1 s2 ↦ s2 = Set.singleton s1
 
-@[reducible] instance : HEq α (α → Prop) where
+@[reducible, simp] instance : HEq α (α → Prop) where
   eq := fun s1 s2 ↦ s2 = Set.singleton s1
 
-@[reducible] instance : HEq (Set α) (Set α) where
+@[reducible, simp] instance : HEq (Set α) (Set α) where
   eq := Eq
 
-@[reducible] instance {α : Type} : HEq (α → Prop) (α → Prop) where
+@[reducible, simp] instance {α : Type} : HEq (α → Prop) (α → Prop) where
   eq := Eq
 
-@[reducible] instance {α : Type} : HEq (α → Prop) (Set α) where
+@[reducible, simp] instance {α : Type} : HEq (α → Prop) (Set α) where
   eq := Eq
 
 /- Transpose -/
@@ -181,7 +177,7 @@ instance {α β : Type} : HTranspose (α → β → Prop) (β → α → Prop) w
 /- Join -/
 
 class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
-  (join : α → β → γ)
+  join : α → β → γ
 
 /--
 `A ⋈ B` returns the relational join of the two exprs. It combines two relations by seeking out rows with common values in their rightmost and leftmost columns. Type as `\bowtie`.
@@ -190,46 +186,46 @@ infix:50 " ⋈ " => HJoin.join
 
 -- TODO: Add more, join is broken with new one field
 
-@[reducible] instance {α β : Type} : HJoin (α) (α → β) (β) where
+@[reducible, simp] instance {α β : Type} : HJoin (α) (α → β) (β) where
   join := fun a g ↦ g a
 
-@[reducible] instance {α β γ : Type} : HJoin (α) (α → β → γ) (β → γ) where
+@[reducible, simp] instance {α β γ : Type} : HJoin (α) (α → β → γ) (β → γ) where
   join := fun a g ↦ g a
 
-@[reducible] instance {α β γ : Type} : HJoin (α) (α → β → γ → Prop) (β → γ → Prop) where
+@[reducible, simp] instance {α β γ : Type} : HJoin (α) (α → β → γ → Prop) (β → γ → Prop) where
   join := fun a g ↦ g a
 
-@[reducible] instance {α β γ δ : Type} : HJoin (α) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
+@[reducible, simp] instance {α β γ δ : Type} : HJoin (α) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
   join := fun a g ↦ g a
 
-@[reducible] instance {α β γ δ ε : Type} : HJoin (α) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
+@[reducible, simp] instance {α β γ δ ε : Type} : HJoin (α) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
   join := fun a g ↦ g a
 
-@[reducible] instance {α β γ: Type} : HJoin (γ → α) (α → β) (γ → β) where
+@[reducible, simp] instance {α β γ: Type} : HJoin (γ → α) (α → β) (γ → β) where
   join := fun l r g ↦ r (l g)
 
-@[reducible] instance {α β γ δ: Type} : HJoin (γ → α) (α → β → δ) (γ → β → δ) where
+@[reducible, simp] instance {α β γ δ: Type} : HJoin (γ → α) (α → β → δ) (γ → β → δ) where
   join := fun l r g b ↦ r (l g) b
 
-@[reducible] instance {α β : Type} : HJoin (α → Prop) (α → β) (β → Prop) where
+@[reducible, simp] instance {α β : Type} : HJoin (α → Prop) (α → β) (β → Prop) where
   join := fun l r b ↦ ∃ a : α, l a ∧ r a = b
 
-@[reducible] instance {α β : Type} : HJoin (Set α) (α → β) (β → Prop) where
+@[reducible, simp] instance {α β : Type} : HJoin (Set α) (α → β) (β → Prop) where
   join := fun l r b ↦ ∃ a : α, l a ∧ r a = b
 
-@[reducible] instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
+@[reducible, simp] instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
   join := fun l r b ↦ ∃ a : α, l a ∧ r a b
 
-@[reducible] instance {α β : Type} : HJoin (Set α) (α → β → Prop) (β → Prop) where
+@[reducible, simp] instance {α β : Type} : HJoin (Set α) (α → β → Prop) (β → Prop) where
   join := fun l r b ↦ ∃ a : α, l a ∧ r a b
 
-@[reducible] instance {α β γ : Type} : HJoin (α → Prop) (α → β → γ → Prop) (β → γ → Prop) where
+@[reducible, simp] instance {α β γ : Type} : HJoin (α → Prop) (α → β → γ → Prop) (β → γ → Prop) where
   join := fun l r b g ↦ ∃ a : α, l a ∧ r a b g
 
-@[reducible] instance {α β γ δ : Type} : HJoin (α → Prop) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
+@[reducible, simp] instance {α β γ δ : Type} : HJoin (α → Prop) (α → β → γ → δ → Prop) (β → γ → δ → Prop) where
   join := fun l r b g d ↦ ∃ a : α, l a ∧ r a b g d
 
-@[reducible] instance {α β γ δ ε : Type} : HJoin (α → Prop) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
+@[reducible, simp] instance {α β γ δ ε : Type} : HJoin (α → Prop) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
   join := fun l r b g d e ↦ ∃ a : α, l a ∧ r a b g d e
 
 /- Cross -/

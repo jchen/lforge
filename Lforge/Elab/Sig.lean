@@ -60,14 +60,20 @@ def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : Com
     | _ => throwErrorAt tok m!"Failed to add axiom 'pfunc_{f.name}'. '{f.name}' does not have arity 2."
   | .func tok => do
     match f.type with
-    | _ :: _ :: [] => helper "func_" ``FieldQuantifier.func tok
+    | _ :: _ :: [] =>
+      -- This is handled by Field.elab
+      -- helper "func_" ``FieldQuantifier.func tok
+      return
     | _ => throwErrorAt tok m!"Failed to add axiom 'func_{f.name}'. '{f.name}' does not have arity 2."
   | _ => return
 
 def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := withRef f.tok do
   let fieldType ←
   match (f.multiplicity, f.type.length) with
+    -- If one, it is a function
     | (.one _, 1) => liftTermElabM $ mkArrow (Lean.mkConst s.name) (Lean.mkConst $ f.type.get! 0)
+    -- If func, it is a function
+    | (.func _, 2) => liftTermElabM $ mkArrow (Lean.mkConst s.name) (← liftTermElabM $ (mkArrow (Lean.mkConst $ f.type.get! 0) (Lean.mkConst $ f.type.get! 1)))
     | _ => liftTermElabM $ arrowTypeOfList ([s.name] ++ f.type)
   elabCommand (← `(noncomputable opaque $(mkIdent f.name) : $(← liftTermElabM $ PrettyPrinter.delab fieldType)))
   if (← getOptions).getBool `forge.hints .false then
@@ -167,6 +173,18 @@ def processAbstractSigs (abstract_sigs : List (Sig × List Sig)) : CommandElabM 
         type := statement,
         isUnsafe := False,
       }
+      -- Get every unique ordered pair of childs, then sets them all disjoint
+      let pairs := children.foldl (λ acc c ↦
+        acc ++ (children.filter (λ c' ↦ c'.name.toString ≠ c.name.toString)).map (λ c' ↦ (c, c'))) []
+      pairs.forM (λ ⟨c1, c2⟩ ↦ do
+        -- Makes the types (or units in case of `one`) different
+        let identifier_name := mkIdent $ s!"disjoint_{s.name.toString}_{c1.name.toString}_{c2.name.toString}"
+        elabCommand (← `(@[reducible,simp] axiom $(identifier_name) : $(mkIdent $ c1.name) ≠ $(mkIdent $ c2.name)))
+        -- Makes their predicates different
+        let identifier_name := mkIdent $ s!"disjoint_{s.name.toString}_Is{c1.name.toString}_Is{c2.name.toString}"
+        let binder := mkIdent $ (s.name.toString.get! 0).toString.toLower
+        elabCommand (← `(@[reducible,simp] axiom $(identifier_name) : ∀ $(binder) : $(mkIdent s.name), $(mkIdent $ c1.name.appendBefore "Is") $(binder) ∧ $(mkIdent $ c2.name.appendBefore "Is") $(binder) → False))
+      )
       let env ← getEnv
       match env.addDecl decl with
       | Except.ok env => do

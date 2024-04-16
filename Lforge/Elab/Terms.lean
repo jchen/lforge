@@ -165,6 +165,7 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
         | .intersection => ``Inter.inter
         | .join => ``Forge.HJoin.join
         | .cross => ``Forge.HCross.cross )
+      -- TODO: Fix coercions
       mkAppM applied_op #[expr_a, expr_b]
   | Expression.if_then_else fmla expr_a expr_b _tok => do
     let fmla ← fmla.elab env

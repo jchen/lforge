@@ -19,6 +19,15 @@ def arrowTypeOfList (types : List Symbol) : TermElabM Expr := do
   | type :: rest =>
     mkArrow (mkConst type) (← arrowTypeOfList rest)
 
+def arrowFunTypeOfList (types : List Symbol) (output_type : Expr) : TermElabM Expr := do
+  match types with
+  | [] =>
+    -- Output
+    pure output_type
+    -- α → β → ... → Output
+  | type :: rest =>
+    mkArrow (mkConst type) (← arrowFunTypeOfList rest output_type)
+
 /--
 Constructs an arrow type from a list, with named variables ending in Prop. Used in Pred elaborator.
 -/

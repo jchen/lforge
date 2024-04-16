@@ -58,13 +58,14 @@ def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : Com
     | _ :: _ :: [] => helper "pfunc_" ``FieldQuantifier.pfunc tok
     -- todo: fix for a -> b -> c, can they be pfunc too?
     | _ => throwErrorAt tok m!"Failed to add axiom 'pfunc_{f.name}'. '{f.name}' does not have arity 2."
-  | .func tok => do
-    match f.type with
-    | _ :: _ :: [] =>
-      -- This is handled by Field.elab
-      -- helper "func_" ``FieldQuantifier.func tok
-      return
-    | _ => throwErrorAt tok m!"Failed to add axiom 'func_{f.name}'. '{f.name}' does not have arity 2."
+  -- All gets handled by Field.elab
+  -- | .func tok => do
+  --   match f.type with
+  --   | _ :: _ :: [] =>
+  --     -- This is handled by Field.elab
+  --     -- helper "func_" ``FieldQuantifier.func tok
+  --     return
+  --   | _ => throwErrorAt tok m!"Failed to add axiom 'func_{f.name}'. '{f.name}' does not have arity 2."
   | _ => return
 
 def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := withRef f.tok do
@@ -73,7 +74,11 @@ def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := withRef f.tok do
     -- If one, it is a function
     | (.one _, 1) => liftTermElabM $ mkArrow (Lean.mkConst s.name) (Lean.mkConst $ f.type.get! 0)
     -- If func, it is a function
-    | (.func _, 2) => liftTermElabM $ mkArrow (Lean.mkConst s.name) (← liftTermElabM $ (mkArrow (Lean.mkConst $ f.type.get! 0) (Lean.mkConst $ f.type.get! 1)))
+    | (.func _, _) =>
+      let type_rev := ([s.name] ++ f.type).reverse
+      let arrow_type :=
+        arrowFunTypeOfList type_rev.tail!.reverse (Lean.mkConst type_rev.head!)
+      liftTermElabM $ arrow_type
     | _ => liftTermElabM $ arrowTypeOfList ([s.name] ++ f.type)
   elabCommand (← `(noncomputable opaque $(mkIdent f.name) : $(← liftTermElabM $ PrettyPrinter.delab fieldType)))
   if (← getOptions).getBool `forge.hints .false then

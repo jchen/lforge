@@ -16,6 +16,13 @@ def Formula.tok : Formula → Syntax
   | Formula.true tok => tok
   | Formula.false tok => tok
 
+def Field.Multiplicity.tok : Field.Multiplicity → Syntax
+  | Field.Multiplicity.one tok => tok
+  | Field.Multiplicity.lone tok => tok
+  | Field.Multiplicity.pfunc tok => tok
+  | Field.Multiplicity.func tok => tok
+  | Field.Multiplicity.set tok => tok
+
 def Expression.tok : Expression → Syntax
   | Expression.unop _ _ tok => tok
   | Expression.binop _ _ _ tok => tok
@@ -23,6 +30,7 @@ def Expression.tok : Expression → Syntax
   | Expression.set_comprehension _ _ tok => tok
   | Expression.app _ _ tok => tok
   | Expression.literal _ tok => tok
+  | Expression.cast _ _ tok => tok
   | Expression.let _ _ _ tok => tok
   | Expression.int _ tok => tok
   | Expression.int.count _ tok => tok

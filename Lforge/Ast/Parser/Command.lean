@@ -14,7 +14,7 @@ def ForgeModel.of_syntax : TSyntax `f_program → MetaM ForgeModel
     terms.foldlM (λ acc term ↦
         match term with
         | `(f_command| $s:f_sig) => do
-          pure { acc with sigs := (← Sig.of_syntax s) :: acc.sigs}
+          pure { acc with sigs := (← Sig.of_syntax s) ++ acc.sigs}
         | `(f_command| $p:f_pred) => do
           pure { acc with predicates := (← Predicate.of_syntax p) :: acc.predicates }
         | `(f_command| $f:f_fun) => do

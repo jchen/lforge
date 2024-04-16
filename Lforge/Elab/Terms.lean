@@ -2,7 +2,6 @@ import Lean
 import Lforge.Utils
 import Lforge.Ast.Types
 import Lforge.Ast.Utils
-import Lforge.Elab.TypeCheck
 import Lforge.Elab.Options
 open Lean Elab Meta Command Term System
 
@@ -11,7 +10,7 @@ set_option autoImplicit false
 namespace ForgeSyntax
 
 mutual
-partial def Formula.elab (env : HashMap Name Expr) (fmla : Formula) : TermElabM Expr := do
+partial def Formula.elab (env : HashMap Name Expr) (fmla : Formula) : TermElabM Expr := withRef fmla.tok do
   let inner ← fmla.elab' env
   -- The following line adds a lot of `Prop` term infos, which we're unsure whether we want.
   -- addTermInfo' fmla.tok inner
@@ -47,9 +46,9 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
     | Formula.ExprUnOp.no => mkAppM ``ExprQuantifier.no #[expr]
     | Formula.ExprUnOp.lone => mkAppM ``ExprQuantifier.lone #[expr]
     | Formula.ExprUnOp.one => mkAppM ``ExprQuantifier.one #[expr]
-  | Formula.expr_binop op expr_a expr_b _ => do
-    let expr_a ← expr_a.elab env true
-    let expr_b ← expr_b.elab env true
+  | Formula.expr_binop op expr_a expr_b _tok => do
+    let expr_a ← expr_a.elab env
+    let expr_b ← expr_b.elab env
     match op with
     | Formula.ExprBinOp.in => mkAppM ``Forge.HIn.subset #[expr_a, expr_b]
     | Formula.ExprBinOp.eq => mkAppM ``Forge.HEq.eq #[expr_a, expr_b]
@@ -116,9 +115,9 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
        - This is a 'complete' set of quantifiers technically.
       -/
       throwErrorAt tok "Quantifiers aside from `some` and `all` are not yet supported due to their complexity and potential ambiguity, please rewrite this into an equivalent statement using universal and existential quantifications."
-  | Formula.app name args _tok => do
+  | Formula.app name args tok => do
     let args ← args.mapM $ Expression.elab env
-    addTermInfo' _tok (mkConst name)
+    addTermInfo' tok (mkConst name)
     mkAppM name args.toArray
   | Formula.let name expression body _tok => do
     let bound_expr ← expression.elab env
@@ -131,12 +130,12 @@ partial def Formula.elab' (env : HashMap Name Expr) (fmla : Formula) : TermElabM
   | Formula.true _ => mkConst ``True
   | Formula.false _ => mkConst ``False
 
-partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) (coe : Bool := false) : TermElabM Expr := do
-  let inner ← expr.elab' env coe
+partial def Expression.elab (env : HashMap Name Expr) (expr : Expression) : TermElabM Expr := withRef expr.tok do
+  let inner ← expr.elab' env
   addTermInfo' expr.tok inner
   return inner
 
-partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) (coe : Bool := false) : TermElabM Expr :=
+partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : TermElabM Expr :=
   match expr with
   | Expression.unop op expr _tok => do
     let expr ← expr.elab env
@@ -212,23 +211,20 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) (coe 
         match env.find? value with
         | .some e => pure e
         | .none => throwErrorAt tok m!"'{value}' is not defined in scope"
-      if coe then
-        let resolved_type ← inferType resolved_name
-        if (← isDefEq resolved_type (.sort levelOne)) then
-          -- TODO: Fix this...how do we want to handle the types here?
-          -- logInfoAt tok m!"Coercing {value} to a function"
-          let arrow_type ← mkArrow resolved_name (.sort levelZero)
-          let resolved_expr ← elabTerm (← PrettyPrinter.delab resolved_name) arrow_type
-          ensureHasType arrow_type resolved_expr
-        else
-          -- logInfoAt tok m!"Not coercing {value}"
-          pure resolved_name
-      else
-        pure resolved_name
+      pure resolved_name
       )
     -- Folds over the resolved names, joining them all together
     resolved_names.tail!.foldr
       (λ elt acc ↦ do mkAppM ``Forge.HJoin.join #[← acc, elt] ) (pure resolved_names.head!)
+  | Expression.cast expr types _tok => do
+    let expr ← expr.elab env
+    let elaborated_types ← types.mapM
+      (λ type ↦ elabTerm type (mkSort levelOne))
+    elaborated_types.foldrM
+      (λ type acc ↦ do
+        (← elabTerm (← PrettyPrinter.delab acc) type)
+          |> ensureHasType type)
+      expr
   | Expression.let name expression body _tok => do
     let bound_expr ← expression.elab env
     let bound_type ← inferType bound_expr
@@ -238,7 +234,7 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) (coe 
         mkLetFVars #[fvar] body)
     return let_body
   | Expression.int val _tok => Expr.ofInt (mkConst ``Int) val
-   | Expression.int.count expr _tok => do
+  | Expression.int.count expr _tok => do
     let expr ← expr.elab env
     -- let stx ← PrettyPrinter.delab expr
     -- make metavariable and ensure set type
@@ -249,9 +245,9 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) (coe 
     mkAppM ``Forge.Card.card #[expr]
   | Expression.int.agg .sing expr _tok => do
     ensureHasType (mkConst ``Int) (← expr.elab env)
-  | Expression.int.agg op expr _tok => do
+  | Expression.int.agg _op _expr tok => do
     -- TODO!
-    throwErrorAt _tok "TODO: int.agg"
+    throwErrorAt tok "TODO: int.agg"
     -- If Finset, takes Finset.min, Finset.max, Finset.sum, etc.
   | Expression.int.sum binder expr body _tok => do
     let expr ← expr.elab env
@@ -260,7 +256,7 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) (coe 
     let expr'' ← ensureHasType type expr'
     withLocalDeclD binder (expr) (λ fvar => do
       let body ← body.elab $ env.insert binder fvar
-      let body' ← forgeEnsureHasType (mkConst ``Int) body
+      let body' ← ensureHasType (mkConst ``Int) body
       mkAppOptM ``Finset.sum #[(mkConst ``Int), expr, none, expr'', mkLambda binder BinderInfo.default (← inferType fvar) body'])
   | Expression.int.unop op expr _tok => do
     let expr ← expr.elab env
@@ -268,8 +264,8 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) (coe 
     | .abs => mkAppM ``Int.natAbs #[expr]
     | .sgn => mkAppM ``Int.sign #[expr]
   | Expression.int.binop .mod expr_a expr_b _tok => do
-    let expr_a ← expr_a.elab env true
-    let expr_b ← expr_b.elab env true
+    let expr_a ← expr_a.elab env
+    let expr_b ← expr_b.elab env
     mkAppM ``Int.mod #[expr_a, expr_b]
   | Expression.int.mulop op exprs _tok => do
     let exprs ← exprs.mapM (λ e ↦ e.elab env)

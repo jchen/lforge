@@ -1,17 +1,16 @@
 import Lforge
-#lang forge
 
 sig Person {
   shaves: one Person
 }
 
 pred shavesThemselves[p: Person] {
-  p in p.shaves
+  p = p.shaves
 }
 
 pred existsBarber {
   some b : Person | all p : Person | {
-    not shavesThemselves[p] <=> b in p.shaves
+    not shavesThemselves[p] <=> b = p.shaves
   }
 }
 

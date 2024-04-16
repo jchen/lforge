@@ -3,6 +3,7 @@ import Lforge.Utils
 import Lforge.Elab.Options
 import Lforge.Elab.Utils
 import Lforge.Ast.Types
+import Lforge.Ast.Utils
 
 open Lean Elab Meta Command Term
 
@@ -26,7 +27,7 @@ private inductive SigInheritanceTree where
   | sigtree (s : Sig) (children : List SigInheritanceTree) (parent : Option Sig)
 
 namespace ForgeSyntax
-def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : CommandElabM Unit := do
+def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : CommandElabM Unit := withRef m.tok do
   let env ← getEnv
   /-
   The helper will create a declaration corresponding to the quantification of a field, for example:
@@ -50,7 +51,7 @@ def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : Com
     | Except.error ex =>
       throwErrorAt tok ex.toMessageData $ ← getOptions)
   match m with
-  | .one tok => helper "one_" ``FieldQuantifier.one tok
+  -- | .one tok => helper "one_" ``FieldQuantifier.one tok
   | .lone tok => helper "lone_" ``FieldQuantifier.lone tok
   | .pfunc tok => do
     match f.type with
@@ -61,44 +62,33 @@ def Field.Multiplicity.elab (_ : Sig) (f : Field) (m : Field.Multiplicity) : Com
     match f.type with
     | _ :: _ :: [] => helper "func_" ``FieldQuantifier.func tok
     | _ => throwErrorAt tok m!"Failed to add axiom 'func_{f.name}'. '{f.name}' does not have arity 2."
-  | .set _ => return
+  | _ => return
 
-def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := do
-  let fieldType ← liftTermElabM $ arrowTypeOfList ([s.name] ++ f.type)
-  -- We need a value to create the opaque declaration since the field ought to be inhabited.
-  let fieldVal ← liftTermElabM $ arrowValueOfList ([s.name] ++ f.type)
-  let fieldDecl := Declaration.opaqueDecl {
-    name := f.name,
-    value := fieldVal,
-    levelParams := [],
-    type := fieldType,
-    isUnsafe := False,
-  }
-  let env ← getEnv
-  match env.addDecl fieldDecl with
-  | Except.ok env =>
-    if (← getOptions).getBool `forge.hints .false then
-      logInfoAt f.name_tok m!"opaque {f.name} : {fieldType}"
-    setEnv env
-    liftTermElabM $ addTermInfo' f.name_tok (mkConst f.name)
-  | Except.error ex =>
-    throwErrorAt s.name_tok ex.toMessageData (← getOptions)
+def Field.elab (s : Sig) (f : Field) : CommandElabM Unit := withRef f.tok do
+  let fieldType ←
+  match (f.multiplicity, f.type.length) with
+    | (.one _, 1) => liftTermElabM $ mkArrow (Lean.mkConst s.name) (Lean.mkConst $ f.type.get! 0)
+    | _ => liftTermElabM $ arrowTypeOfList ([s.name] ++ f.type)
+  elabCommand (← `(noncomputable opaque $(mkIdent f.name) : $(← liftTermElabM $ PrettyPrinter.delab fieldType)))
+  if (← getOptions).getBool `forge.hints .false then
+    logInfoAt f.name_tok m!"opaque {f.name} : {fieldType}"
+  liftTermElabM $ addTermInfo' f.name_tok (mkConst f.name)
   f.multiplicity.elab s f
 
-def Sig.Multiplicity.elab (s : Sig) (m : Sig.Multiplicity) : CommandElabM Unit := do
+def Sig.Multiplicity.elab (s : Sig) (m : Sig.Multiplicity) : CommandElabM Unit := withRef s.name_tok do
   -- Every type ought to be inhabited
   elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.underscored.appendBefore "inhabited_") : Inhabited $(mkIdent s.name)))
   -- Every type is finitely inhabited
   elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.underscored.appendBefore "fintype_") : Fintype $(mkIdent s.name)))
   match m with
-  | .one tok =>
+  | .one tok => withRef tok do
     elabCommand (← `(@[instance] axiom $(mkIdent $ s.name.underscored.appendBefore "one_") : SigQuantifier.One $(mkIdent s.name)))
     liftTermElabM $ addTermInfo' tok (mkConst $ s.name.underscored.appendBefore "one_")
-  | .lone tok =>
+  | .lone tok => withRef tok do
     logInfoAt tok m!"Lforge does not currently support the lone quantifier, since all types currently default to being inhabited. You might want to consider using `one` or `abstract` instead."
   | _ => return
 
-def Sig.elab (s : Sig): CommandElabM Unit := do
+def Sig.elab (s : Sig): CommandElabM Unit := withRef s.name_tok do
   let env ← getEnv
   match s.ancestor with
   | .none =>
@@ -119,11 +109,12 @@ def Sig.elab (s : Sig): CommandElabM Unit := do
       throwErrorAt s.name_tok ex.toMessageData (← getOptions)
     s.quantifier.elab s
   | some a => do
-    match s.quantifier with
-    | .one tok =>
-      if s.fields.isEmpty then
-        throwErrorAt tok m!"Sig '{s.name}' has no fields."
-        -- TODO: Make this generate an noncomputable opaque sig
+    -- Check if s.quantifier is a .one type
+    match (s.quantifier, s.fields.isEmpty) with
+    | (.one _, true) => do
+      elabCommand (← `(noncomputable opaque $(mkIdent s.name) : $(mkIdent a)))
+      elabCommand (← `(def $(mkIdent $ s.name.appendBefore "Is") : $(mkIdent a) → Prop := ($(mkIdent s.name) = .)))
+      liftTermElabM $ addTermInfo' s.name_tok (mkConst s.name)
     | _ =>
       elabCommand (← `(opaque $(mkIdent $ s.name.appendBefore "Is") : $(mkIdent a) → Prop))
       let first_char := (s.name.getString!.get! 0).toString
@@ -156,7 +147,7 @@ def getChildrenOfAbstract (sigs : List Sig) : List (Sig × List Sig) := do
 Adds `abstract_[sig] : ∀ [first character] : [sig], Is[ChildSig1] _ ∨ Is[ChildSig2] _`
 -/
 def processAbstractSigs (abstract_sigs : List (Sig × List Sig)) : CommandElabM Unit := do
-  abstract_sigs.forM (λ ⟨s, children⟩ ↦ do
+  abstract_sigs.forM (λ ⟨s, children⟩ ↦ withRef s.name_tok do
   -- If there are no children, add an error to abstract tok
     if children.isEmpty then
       throwErrorAt s.name_tok m!"Abstract sig '{s.name}' has no children."

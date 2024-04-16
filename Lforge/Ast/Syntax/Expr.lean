@@ -58,6 +58,7 @@ syntax:80 f_expr:80 "->" f_expr:79 : f_expr
 `{<fmla> => <expr-a> else <expr-b>}` returns `<expr-a>` if `<fmla>` evaluates to true, and `<expr-b>` otherwise.
 -/
 syntax "if" f_fmla "then" f_expr "else" f_expr : f_expr
+-- TODO: Alternative syntax?
 
 /--
 A set-comprehension expression `{x1: T1, ..., xn: Tn | <fmla>}` evaluates to a set of arity-n tuples. A tuple of objects `o1, ... on` is in the set if and only if `<fmla>` is satisfied when `x1` takes the value `o1`, etc.
@@ -71,17 +72,29 @@ syntax:90 f_expr:90 "[" f_expr:90,* "]" : f_expr
 syntax ident : f_expr
 
 -- let
-syntax "let" ident "=" f_expr "|" f_expr : f_expr
+syntax:15 "let" ident "=" f_expr "|" f_expr : f_expr
+
+-- cast
+/-
+Note: This is custom syntax in Lforge to explicitly cast an expression to a particular type. This helps
+move the Lean elaborator along and facilitates type coercions.
+-/
+/--
+`x /* as P */` is a Lean type annotation `x` ought to have type `P`. In cases where Lean is having trouble unify Forge types, this can help move the elaborator along.
+
+You can also chain casts, like if `x` is an element of type `K` and `K` is a child class of `P`. For example, `x /* as K, P → Prop */` casts `x` to type `P → Prop`.
+-/
+syntax:150 f_expr "/*" "as" term,+ "*/" : f_expr
 
 -- parens
-syntax:0 "(" f_expr:0 ")" : f_expr
+syntax:0 "(" f_expr ")" : f_expr
 
 -- int literal
 syntax num : f_expr
 syntax "-" num : f_expr
 
 -- count
-syntax:65 "#" f_expr:65 : f_expr
+syntax:65 "#" f_expr : f_expr
 
 -- aggs
 /--

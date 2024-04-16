@@ -188,7 +188,12 @@ class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
 -/
 infix:50 " ⋈ " => HJoin.join
 
-@[reducible] instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
+-- TODO: Add more, join is broken with new one field
+
+@[reducible] instance {α β : Type} : HJoin (α) (α → β) (β) where
+  join := fun a g ↦ g a
+
+@[reducible] instance {α β γ : Type} : HJoin (α) (α → β → γ) (β → γ) where
   join := fun a g ↦ g a
 
 @[reducible] instance {α β γ : Type} : HJoin (α) (α → β → γ → Prop) (β → γ → Prop) where
@@ -199,6 +204,12 @@ infix:50 " ⋈ " => HJoin.join
 
 @[reducible] instance {α β γ δ ε : Type} : HJoin (α) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
   join := fun a g ↦ g a
+
+  @[reducible] instance {α β γ: Type} : HJoin (γ → α) (α → β) (γ → β) where
+  join := fun l r g ↦ r (l g)
+
+@[reducible] instance {α β γ δ: Type} : HJoin (γ → α) (α → β → δ) (γ → β → δ) where
+  join := fun l r g b ↦ r (l g) b
 
 @[reducible] instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
   join := fun l r b ↦ ∃ a : α, l a ∧ r a b

@@ -21,27 +21,30 @@ def Field.Multiplicity.of_syntax (stx : TSyntax `f_field_multiplicity) : MetaM F
   | `(f_field_multiplicity| set) => return .set stx
   | _ => throwUnsupportedSyntax
 
-def Field.of_syntax : TSyntax `f_field → MetaM Field
+def Field.of_syntax (stx : TSyntax `f_field) : MetaM Field :=
+  match stx with
   | `(f_field| $name:ident : $multiplicity:f_field_multiplicity $type:ident->*) => do
     let multiplicity ← Field.Multiplicity.of_syntax multiplicity
-    pure { name := name.getId, name_tok := name, multiplicity := multiplicity, type := type.getElems.toList.map (λ i ↦ i.getId) }
+    pure { name := name.getId, name_tok := name, multiplicity := multiplicity, type := type.getElems.toList.map (λ i ↦ i.getId), tok := stx }
   | _ => throwUnsupportedSyntax
 
-def Sig.of_syntax : TSyntax `f_sig → MetaM Sig
+def Sig.of_syntax : TSyntax `f_sig → MetaM (List Sig)
   -- Bare sig
-  | `(f_sig| $quantifier:f_sig_multiplicity ? sig $name:ident { $fields:f_field,* }) => do
+  | `(f_sig| $quantifier:f_sig_multiplicity ? sig $names:ident,* { $fields:f_field,* }) => do
+    names.getElems.toList.mapM ( λ name ↦ do
     let quantifier ← match quantifier with
       | some q => Sig.Multiplicity.of_syntax q
       | none => pure .unquantified
     let fields ← fields.getElems.toList.mapM Field.of_syntax
-    pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := none, fields := fields }
+    pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := none, fields := fields })
   -- Sig with ancestor
-  | `(f_sig| $quantifier:f_sig_multiplicity ? sig $name:ident extends $ancestor:ident { $fields:f_field,* }) => do
+  | `(f_sig| $quantifier:f_sig_multiplicity ? sig $names:ident,* extends $ancestor:ident { $fields:f_field,* }) => do
+    names.getElems.toList.mapM ( λ name ↦ do
     let quantifier ← match quantifier with
       | some q => Sig.Multiplicity.of_syntax q
       | none => pure .unquantified
     let fields ← fields.getElems.toList.mapM Field.of_syntax
-    pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := some ancestor.getId, fields := fields }
+    pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := some ancestor.getId, fields := fields })
   | _ => throwUnsupportedSyntax
 
 end ForgeSyntax

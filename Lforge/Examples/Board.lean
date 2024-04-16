@@ -1,11 +1,9 @@
 import Lforge
 #lang forge
 
-sig Player {}
--- one sig X extends Player {}
--- one sig O extends Player {}
-noncomputable opaque X : Player
-noncomputable opaque O : Player
+abstract sig Player {}
+one sig X extends Player {}
+one sig O extends Player {}
 
 sig Board {
   board: set Int -> Int -> Player

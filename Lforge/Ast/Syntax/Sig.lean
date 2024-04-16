@@ -82,7 +82,7 @@ sig <name> {
 ```
 -/
 syntax f_sig' : f_sig
-syntax f_sig_multiplicity ? "sig" ident "{" f_field,* "}" : f_sig'
+syntax f_sig_multiplicity ? "sig" ident,+ "{" f_field,* "}" : f_sig'
 
 declare_syntax_cat f_extends
 /--
@@ -111,6 +111,6 @@ sig ProgrammerCat extends Cat {}
 This means that any `ProgrammerCat` object is also a `Cat` object, and so will have a `favoriteFood` field. But only `ActorCat`s have the `playName` field. Moreover, any cat may be either an `ActorCat`, `ProgrammerCat`, or neither---but not both.
 -/
 syntax "extends" ident : f_extends
-syntax f_sig_multiplicity ? "sig" ident f_extends "{" f_field,* "}" : f_sig'
+syntax f_sig_multiplicity ? "sig" ident,+ f_extends "{" f_field,* "}" : f_sig'
 
 end ForgeSyntax

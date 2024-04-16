@@ -7,7 +7,7 @@ open Lean Elab Meta Command Term
 
 namespace ForgeSyntax
 
-def Predicate.elab (p : Predicate) : CommandElabM Unit := do
+def Predicate.elab (p : Predicate) : CommandElabM Unit := withRef p.name_tok do
   let env ← getEnv
   let vars ← liftTermElabM $ p.args.mapM (λ v ↦ do
     let (name, type) := v

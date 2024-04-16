@@ -8,7 +8,7 @@ open Lean Elab Meta Command Term
 namespace ForgeSyntax
 
 -- This is a copy of Predicate code except output type is X -> Prop instead of Prop
-def Function.elab (f : Function) : CommandElabM Unit := do
+def Function.elab (f : Function) : CommandElabM Unit := withRef f.name_tok do
   let env ← getEnv
   -- Variables (binders)
   let vars ← liftTermElabM $ f.args.mapM (λ v ↦ do

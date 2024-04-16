@@ -86,6 +86,7 @@ structure Field where
   Otherwise, if the type is of arity-n, such as `A → B → C`, then the type is `[A, B, C]` in order.
   -/
   type : List Symbol
+  tok : Syntax
   deriving Repr, Inhabited
 
 /--
@@ -255,6 +256,8 @@ mutual
     /-- a literal value, can be sig, relation, or top-level expr (univ, none, iden, etc.) -/
     | literal (value : Symbol) (tok : Syntax)
     | let (id : Symbol) (expression : Expression) (body : Expression) (tok : Syntax)
+    /-- type cast -/
+    | cast (expr : Expression) (types : List (TSyntax `term)) (tok : Syntax)
     /- Integer expressions -/
     /-- Integer literal -/
     | int (val : Int) (tok : Syntax)

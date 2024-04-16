@@ -116,7 +116,7 @@ syntax:15 "let" ident "=" f_expr "|" f_fmla:15 : f_fmla
 
 -- parens
 syntax "(" f_fmla ")" : f_fmla
-syntax "{" f_fmla "}" : f_fmla
+syntax "{" f_fmla,+ "}" : f_fmla
 
 -- boolean literals
 syntax "true" : f_fmla

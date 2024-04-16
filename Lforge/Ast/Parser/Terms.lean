@@ -91,7 +91,14 @@ partial def Formula.of_syntax (stx : TSyntax `f_fmla) : MetaM Formula :=
     return Formula.let id.getId (← Expression.of_syntax expr_a) (← Formula.of_syntax fmla) stx
   -- parens
   | `(f_fmla| ( $fmla:f_fmla )) => return (← Formula.of_syntax fmla)
-  | `(f_fmla| { $fmla:f_fmla }) => return (← Formula.of_syntax fmla)
+  | `(f_fmla| { $fmlas:f_fmla,* }) => do
+    match fmlas.getElems.toList with
+    | [] => return Formula.true stx
+    | fmla => do
+      let fmlas_rev := fmla.reverse
+      let init ← Formula.of_syntax fmlas_rev.head!
+      fmlas_rev.tail!.foldlM (λ acc elt ↦ do
+        return .binop .and (← Formula.of_syntax elt) acc stx) init
   -- boolean literals
   | `(f_fmla| true) => return Formula.true stx
   | `(f_fmla| false) => return Formula.false stx
@@ -131,6 +138,7 @@ partial def Expression.of_syntax (stx : TSyntax `f_expr) : MetaM Expression :=
   -- let
   | `(f_expr| let $id:ident = $expr_a:f_expr | $expr_b:f_expr) =>
     return Expression.let id.getId (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+  | `(f_expr| $expr:f_expr /* as $types:term,* */) => return Expression.cast (← Expression.of_syntax expr) types.getElems.toList stx
   -- parens
   | `(f_expr| ( $expr:f_expr )) => return (← Expression.of_syntax expr)
   -- int literal (and negative):

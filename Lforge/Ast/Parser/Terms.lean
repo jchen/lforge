@@ -56,6 +56,9 @@ partial def Formula.of_syntax (stx : TSyntax `f_fmla) : MetaM Formula :=
   -- Binary operators on expressions
   | `(f_fmla| $expr_a:f_expr in $expr_b:f_expr) =>
     return Formula.expr_binop .in (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
+  | `(f_fmla| $expr_a:f_expr !in $expr_b:f_expr)
+  | `(f_fmla| $expr_a:f_expr not in $expr_b:f_expr) =>
+    return Formula.unop .not (Formula.expr_binop .in (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx) stx
   | `(f_fmla| $expr_a:f_expr = $expr_b:f_expr) =>
     return Formula.expr_binop .eq (← Expression.of_syntax expr_a) (← Expression.of_syntax expr_b) stx
   | `(f_fmla| $expr_a:f_expr != $expr_b:f_expr) =>
@@ -91,8 +94,8 @@ partial def Formula.of_syntax (stx : TSyntax `f_fmla) : MetaM Formula :=
     return Formula.let id.getId (← Expression.of_syntax expr_a) (← Formula.of_syntax fmla) stx
   -- parens
   | `(f_fmla| ( $fmla:f_fmla )) => return (← Formula.of_syntax fmla)
-  | `(f_fmla| { $fmlas:f_fmla,* }) => do
-    match fmlas.getElems.toList with
+  | `(f_fmla| { $fmlas:f_fmla* }) => do
+    match fmlas.toList with
     | [] => return Formula.true stx
     | fmla => do
       let fmlas_rev := fmla.reverse

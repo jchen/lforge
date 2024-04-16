@@ -59,6 +59,9 @@ syntax:80 f_expr:80 "->" f_expr:79 : f_expr
 -/
 syntax "if" f_fmla "then" f_expr "else" f_expr : f_expr
 -- TODO: Alternative syntax?
+-- TODO: Broken:
+-- syntax f_fmla "=>" f_expr "else" f_expr : f_expr
+
 
 /--
 A set-comprehension expression `{x1: T1, ..., xn: Tn | <fmla>}` evaluates to a set of arity-n tuples. A tuple of objects `o1, ... on` is in the set if and only if `<fmla>` is satisfied when `x1` takes the value `o1`, etc.
@@ -87,7 +90,7 @@ You can also chain casts, like if `x` is an element of type `K` and `K` is a chi
 syntax:150 f_expr "/*" "as" term,+ "*/" : f_expr
 
 -- parens
-syntax:0 "(" f_expr ")" : f_expr
+syntax:100 "(" f_expr ")" : f_expr
 
 -- int literal
 syntax num : f_expr

@@ -291,11 +291,18 @@ structure Function where
   body : Expression -- with args bound
   deriving Repr, Inhabited
 
+inductive ForgeDecl where
+  | p (p : Predicate)
+  | f (f : Function)
+  deriving Repr, Inhabited
+
 structure ForgeModel where
   -- All in reverse order!
   sigs : List Sig
-  predicates : List Predicate
-  functions : List Function
+  -- So we can have in-order definitions
+  -- predicates : List Predicate
+  -- functions : List Function
+  decls : List ForgeDecl
   deriving Repr, Inhabited
 
 end ForgeSyntax

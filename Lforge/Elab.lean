@@ -21,8 +21,12 @@ def forgeImpl : CommandElab
     let model ← liftTermElabM $ ForgeModel.of_syntax s
     -- Elaborate all sigs first, this is so sig Types are defined (and lifted) before we try to define any fields, functions or predicates
     Sig.lift_and_elab_multiple model.sigs
-    model.predicates.reverse.forM Predicate.elab
-    model.functions.reverse.forM Function.elab
+    model.decls.reverse.forM (
+      λ decl ↦
+      match decl with
+      | .p p => p.elab
+      | .f f => f.elab
+    )
   | _ => throwUnsupportedSyntax
 
 end ForgeSyntax

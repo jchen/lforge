@@ -70,6 +70,15 @@ syntax:55 "one" f_expr:55 : f_fmla
 -/
 syntax:50 f_expr:50 "in" f_expr:50 : f_fmla
 /--
+`<expr-a> not in <expr-b>`: true when `<expr-a>` is not a **subset** of or equal to `<expr-b>`.
+-/
+syntax:50 f_expr:50 "not in" f_expr:50 : f_fmla
+/--
+`<expr-a> !in <expr-b>`: true when `<expr-a>` is not a **subset** of or equal to `<expr-b>`.
+-/
+syntax:50 f_expr:50 "!in" f_expr:50 : f_fmla
+
+/--
 `<expr-a> = <expr-b>`: true when `<expr-a>` and `<expr-b>` contain exactly the **same elements**.
 -/
 syntax:50 f_expr:50 "=" f_expr:50 : f_fmla
@@ -96,11 +105,11 @@ syntax:30 f_fmla:30 "implies" f_fmla "else" f_fmla : f_fmla
 
 -- TODO: add documentation to all the following syntax
 declare_syntax_cat f_fmla_quantifier
-syntax "no" : f_fmla_quantifier
-syntax "lone" : f_fmla_quantifier
-syntax "one" : f_fmla_quantifier
-syntax "some" : f_fmla_quantifier
-syntax "all" : f_fmla_quantifier
+syntax:15 "no" : f_fmla_quantifier
+syntax:15 "lone" : f_fmla_quantifier
+syntax:15 "one" : f_fmla_quantifier
+syntax:15 "some" : f_fmla_quantifier
+syntax:15 "all" : f_fmla_quantifier
 
 -- syntax:15 f_fmla_quantifier f_args "|" "{" f_fmla:15 "}" : f_fmla
 syntax:15 f_fmla_quantifier f_args "|" f_fmla : f_fmla
@@ -115,8 +124,8 @@ syntax ident "[" f_expr,* "]" : f_fmla
 syntax:15 "let" ident "=" f_expr "|" f_fmla:15 : f_fmla
 
 -- parens
-syntax "(" f_fmla ")" : f_fmla
-syntax "{" f_fmla,+ "}" : f_fmla
+syntax:100 "(" f_fmla ")" : f_fmla
+syntax:100 "{" f_fmla+ "}" : f_fmla
 
 -- boolean literals
 syntax "true" : f_fmla

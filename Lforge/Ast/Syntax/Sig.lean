@@ -58,7 +58,7 @@ sig Person {
 ```
 The `lone` multiplicity says that the field may contain at most one atom. (Note that this example has yet to express the constraint that everyone has a friend!)
 -/
-syntax ident ":" f_field_multiplicity sepBy1(ident, " -> ") : f_field
+syntax ident,+ ":" f_field_multiplicity sepBy1(ident, " -> ") : f_field
 
 declare_syntax_cat f_sig
 declare_syntax_cat f_sig'

@@ -197,6 +197,7 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
        This is so we can use dots in Forge to represent a join, and not a scoping. -/
     -- Gets the list of all the names, flat if dot_join is disabled
     -- TODO: make this smarter! If it can resolve the nested type doesn't explode!
+    -- TODO: If something is a Type, automatically cast it to either an atom or set
     let names := ( if (← getOptions).getBool `forge.dot_join .true then
         explode_names_over_macro_scopes value |> List.reverse
       else
@@ -211,17 +212,16 @@ partial def Expression.elab' (env : HashMap Name Expr) (expr : Expression) : Ter
         match env.find? value with
         | .some e => pure e
         | .none => throwErrorAt tok m!"'{value}' is not defined in scope"
-      pure resolved_name
-      )
+      pure resolved_name)
     -- Folds over the resolved names, joining them all together
-    resolved_names.tail!.foldr
-      (λ elt acc ↦ do mkAppM ``Forge.HJoin.join #[← acc, elt] ) (pure resolved_names.head!)
+    resolved_names.tail!.foldl
+      (λ acc elt ↦ do mkAppM ``Forge.HJoin.join #[← acc, elt] ) (pure resolved_names.head!)
   | Expression.cast expr types _tok => do
     let expr ← expr.elab env
     let elaborated_types ← types.mapM
       (λ type ↦ elabTerm type (mkSort levelOne))
-    elaborated_types.foldrM
-      (λ type acc ↦ do
+    elaborated_types.foldlM
+      (λ acc type ↦ do
         (← elabTerm (← PrettyPrinter.delab acc) type)
           |> ensureHasType type)
       expr

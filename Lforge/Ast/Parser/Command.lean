@@ -16,11 +16,13 @@ def ForgeModel.of_syntax : TSyntax `f_program → MetaM ForgeModel
         | `(f_command| $s:f_sig) => do
           pure { acc with sigs := (← Sig.of_syntax s) ++ acc.sigs}
         | `(f_command| $p:f_pred) => do
-          pure { acc with predicates := (← Predicate.of_syntax p) :: acc.predicates }
+          pure { acc with decls :=
+            (.p (← Predicate.of_syntax p)) :: acc.decls }
         | `(f_command| $f:f_fun) => do
-          pure { acc with functions := (← Function.of_syntax f) :: acc.functions }
+          pure { acc with decls :=
+            (.f (← Function.of_syntax f)) :: acc.decls }
         | _ => throwUnsupportedSyntax
-      ) { sigs := [], predicates := [], functions := [] : ForgeModel}
+      ) { sigs := [], decls := [] : ForgeModel}
   | _ => throwUnsupportedSyntax
 
 end ForgeSyntax

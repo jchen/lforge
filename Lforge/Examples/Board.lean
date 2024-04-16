@@ -1,4 +1,11 @@
 import Lforge
+
+/-
+The following is adapted from cs1710, modeling a game of Tic-Tac-Toe:
+https://csci1710.github.io/book/chapters/intro_modeling/intro_modeling_3.html
+https://github.com/tnelson/Forge/blob/main/viz-examples/ttt/ttt.frg
+-/
+
 abstract sig Player {}
 one sig X, O extends Player {}
 
@@ -106,7 +113,7 @@ pred move[pre: Board, post: Board, row: Int, col: Int, p: Player] {
 
     -- ACTION (what does the post-state then look like?)
     post.board[row][col] = p
-    all row2: Int, col2: Int | (row!=row2 or col!=col2) implies {
+    all row2: Int, col2: Int | (row != row2 or col != col2) implies {
         post.board[row2][col2] = pre.board[row2][col2]
     }
 
@@ -144,13 +151,13 @@ one sig Game {
 }
 
 pred traces {
-    starting[Game.initialState]
-    all b: Board | some Game.next[b] implies {
+    starting[Game/*as Game*/.initialState]
+    all b: Board | some Game/*as Game*/.next[b] implies {
         some row, col: Int, p: Player | {
-            move[b, Game.next[b], row, col, p]
+            move[b, Game/*as Game*/.next[b], row, col, p]
         }
         or
-            doNothing[b, Game.next[b]]
+            doNothing[b, Game/*as Game*/.next[b]]
     }
 
     --- ?

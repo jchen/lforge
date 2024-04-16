@@ -51,7 +51,7 @@ pred stepNarrow[pre: SearchState, post: SearchState] {
     -- mid = (low+high)/2  (rounded down)
     let mid = divide[add[pre.low, pre.high], 2] | {
       -- GUARD: must continue searching, this isn't it
-      pre.arr.elements[mid] != pre.target and -- TODO: fix auto and insertion in braces { }
+      pre.arr.elements[mid] != pre.target
       -- ACTION: narrow left or right
       pre.arr.elements[mid] < pre.target
           => {

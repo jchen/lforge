@@ -21,11 +21,12 @@ def Field.Multiplicity.of_syntax (stx : TSyntax `f_field_multiplicity) : MetaM F
   | `(f_field_multiplicity| set) => return .set stx
   | _ => throwUnsupportedSyntax
 
-def Field.of_syntax (stx : TSyntax `f_field) : MetaM Field :=
+def Field.of_syntax (stx : TSyntax `f_field) : MetaM (List Field) :=
   match stx with
-  | `(f_field| $name:ident : $multiplicity:f_field_multiplicity $type:ident->*) => do
+  | `(f_field| $names:ident,* : $multiplicity:f_field_multiplicity $type:ident->*) => do
+    names.getElems.toList.mapM (λ name : TSyntax `ident ↦ do
     let multiplicity ← Field.Multiplicity.of_syntax multiplicity
-    pure { name := name.getId, name_tok := name, multiplicity := multiplicity, type := type.getElems.toList.map (λ i ↦ i.getId), tok := stx }
+    pure { name := name.getId, name_tok := name, multiplicity := multiplicity, type := type.getElems.toList.map (λ i ↦ i.getId), tok := stx })
   | _ => throwUnsupportedSyntax
 
 def Sig.of_syntax : TSyntax `f_sig → MetaM (List Sig)
@@ -35,7 +36,7 @@ def Sig.of_syntax : TSyntax `f_sig → MetaM (List Sig)
     let quantifier ← match quantifier with
       | some q => Sig.Multiplicity.of_syntax q
       | none => pure .unquantified
-    let fields ← fields.getElems.toList.mapM Field.of_syntax
+    let fields ← (← fields.getElems.toList.mapM Field.of_syntax).foldlM (λ acc elt ↦ return elt ++ acc) []
     pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := none, fields := fields })
   -- Sig with ancestor
   | `(f_sig| $quantifier:f_sig_multiplicity ? sig $names:ident,* extends $ancestor:ident { $fields:f_field,* }) => do
@@ -43,7 +44,7 @@ def Sig.of_syntax : TSyntax `f_sig → MetaM (List Sig)
     let quantifier ← match quantifier with
       | some q => Sig.Multiplicity.of_syntax q
       | none => pure .unquantified
-    let fields ← fields.getElems.toList.mapM Field.of_syntax
+    let fields ← (← fields.getElems.toList.mapM Field.of_syntax).foldlM (λ acc elt ↦ return elt ++ acc) []
     pure { quantifier := quantifier, name := name.getId, name_tok := name, ancestor := some ancestor.getId, fields := fields })
   | _ => throwUnsupportedSyntax
 

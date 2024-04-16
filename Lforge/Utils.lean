@@ -205,11 +205,17 @@ infix:50 " ⋈ " => HJoin.join
 @[reducible] instance {α β γ δ ε : Type} : HJoin (α) (α → β → γ → δ → ε → Prop) (β → γ → δ → ε → Prop) where
   join := fun a g ↦ g a
 
-  @[reducible] instance {α β γ: Type} : HJoin (γ → α) (α → β) (γ → β) where
+@[reducible] instance {α β γ: Type} : HJoin (γ → α) (α → β) (γ → β) where
   join := fun l r g ↦ r (l g)
 
 @[reducible] instance {α β γ δ: Type} : HJoin (γ → α) (α → β → δ) (γ → β → δ) where
   join := fun l r g b ↦ r (l g) b
+
+@[reducible] instance {α β : Type} : HJoin (α → Prop) (α → β) (β → Prop) where
+  join := fun l r b ↦ ∃ a : α, l a ∧ r a = b
+
+@[reducible] instance {α β : Type} : HJoin (Set α) (α → β) (β → Prop) where
+  join := fun l r b ↦ ∃ a : α, l a ∧ r a = b
 
 @[reducible] instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
   join := fun l r b ↦ ∃ a : α, l a ∧ r a b
@@ -249,8 +255,14 @@ instance {α β : Type} : HCross (α → Prop) (β → Prop) (α → β → Prop
 instance {α β : Type} : Union (α → β → Prop) where
   union := fun f g ↦ fun a b ↦ f a b ∨ g a b
 
+instance {α : Type} [u : Union (Set α)] : Union (α → Prop) where
+  union := u.union
+
 instance {α β : Type} : Inter (α → β → Prop) where
   inter := fun f g ↦ fun a b ↦ f a b ∧ g a b
+
+  instance {α : Type} [i : Inter (Set α)] : Inter (α → Prop) where
+  inter := i.inter
 
 prefix:60 "^" => Relation.TransGen
 prefix:60 "*" => Relation.ReflTransGen
@@ -268,6 +280,9 @@ noncomputable instance {α : Type} : Card (α → Prop) where
 
 noncomputable instance : Card (α) where
   card := fun _ ↦ 1
+
+instance [f: Fintype α] : CoeDep Type (α : Type) (Set α) where
+  coe := (f.elems : Set α)
 
 instance [f: Fintype α] : CoeDep Type (α : Type) (α → Prop) where
   coe := (f.elems : Set α)

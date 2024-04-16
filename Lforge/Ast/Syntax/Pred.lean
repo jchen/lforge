@@ -33,4 +33,6 @@ and then write something like `some p : Person | parentOrChildOf[Tim, p]`. Predi
 -/
 syntax "pred" ident ("[" f_args "]")? "{" f_fmla* "}" : f_pred
 
+-- TODO: translate test code
+
 end ForgeSyntax

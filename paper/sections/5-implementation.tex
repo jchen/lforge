@@ -1,5 +1,5 @@
 % !TEX root = ../paper.tex
-\section{Challenges and Implementation Details}
+\section{Implementation Details and Challenges}
 
 \subsection{Finiteness of Forge Sigs}\label{sec:finiteness}
 Recall as summarized in \cref{sec:forge-model} that Forge Sigs get (most naturally) translated to Lean Types. However, we need to be cautious using this as a drop-in replacement for the concept of sigs. While we don't have soundness and completeness guarantees, we ought to feel confident that our translation preserves the semantics of Forge faithfully. \todo{SK: I'm curious about this statement; it at least deserves elaboration. I see no reason why we can't get some kinds of formal guarantees, since we're going from a formalized object to a formalized object.}
@@ -115,11 +115,13 @@ sig Grad extends Student {}
 \end{forge*}
 which is to say that every object instance of \texttt{Student} had ought to be either a \texttt{Undergrad} or \texttt{Grad}. Within our framework, this can be implemented in Lean as
 \begin{lean*}
-axiom abstract_student : ∀ s : Student, IsUndergrad s ∨ isGrad s
+axiom abstract_student : ∀ s : Student, IsUndergrad s ∨ IsGrad s
 \end{lean*}
 provided both subtype instances for \texttt{Undergrad} and \texttt{Grad} have been generated correctly. 
 
-\todo{this is new, review}Such an analysis and translation of inheritance requires a global processing of the Forge program in Lean, since every expression emitted by our elaborator ought to have well-defined types and terms (that is, cannot be waiting on a term to be defined). Since Forge fields can depend on any sig, we need to `lift' sigs to define first before all fields and predicates can be defined. Furthermore, sig quantifiers and inheritance structures require preprocessing all sigs to generate a topological sort of the inheritance structure before expressing any of their translations in Lean. Since Forge is not a `local' language and all sig declarations are lifted, this was not a problem for us before we entered Lean. As such, sigs can be specified in any order. 
+\todo{Write more about types of things here perhaps, separate out into processing for `one' and what not.}
+
+Such an analysis and translation of inheritance requires a global processing of the Forge program in Lean, since every expression emitted by our elaborator ought to have well-defined types and terms (that is, cannot be waiting on a term to be defined). Since Forge fields can depend on any sig, we need to `lift' sigs to define first before all fields and predicates can be defined. Furthermore, sig quantifiers and inheritance structures require preprocessing all sigs to generate a topological sort of the inheritance structure before expressing any of their translations in Lean. Since Forge is not a `local' language and all sig declarations are lifted, this was not a problem for us before we entered Lean. As such, sigs can be specified in any order in Forge. 
 
 For the remaining of sig quantifiers like \texttt{one} and \texttt{lone}, because of their complex interactions with inheritance (a \texttt{one} sig means that there is only one inhabited member of that sig that \emph{is not} any child sig, contrary to our intuition as to what a \texttt{one} or \texttt{lone} sig should be), our program prompts the user to write a customized axiom in Lean expressing their desired constraint. Note that this utilizes the seamless integration of Forge into Lean that makes such a solution of model specification `mixins' possible. Anecdotally, \texttt{one} and \texttt{lone} sigs only apply to child sigs and the \texttt{abstract} quantification is only used on parent sigs (it doesn't make sense for a non-inherited sig to be \texttt{abstract}), so we expect that manual handling of sig quantifications to be an edge case. 
 
@@ -224,15 +226,15 @@ class HJoin (α : Type) (β : Type) (γ : outParam Type) :=
   (join : α → β → γ)
 
 -- Join singleton with arity-2 relation
-@[reducible] instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
+@[reducible, simp] instance {α β : Type} : HJoin (α) (α → β → Prop) (β → Prop) where
   join := fun a g ↦ g a
 
 -- Join set with arity-2 relation
-@[reducible] instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
+@[reducible, simp] instance {α β : Type} : HJoin (α → Prop) (α → β → Prop) (β → Prop) where
   join := fun l r b ↦ ∃ a : α, l a ∧ r a b
 \end{leanimpl*}
 
-Then, when translating $\texttt{a}\bowtie \texttt{b}$, we can nondiscriminately produce \texttt{HJoin.join a b} and have Lean synthesize which particular implementation to apply based on the types of \texttt{a} and \texttt{b}. This allows us to have the most specific translation of an expression depending on the types of operands. \todo{mention we run then simplify to the native meaning at proof time}
+Then, when translating $\texttt{a}\bowtie \texttt{b}$, we can nondiscriminately produce \texttt{HJoin.join a b} and have Lean synthesize which particular implementation to apply based on the types of \texttt{a} and \texttt{b}. This allows us to have the most specific translation of an expression depending on the types of operands. The \texttt{simp} attribute on the instances allows the Lean simplifier (calling the \texttt{simp} tactic) to consult this as a unfoldable definition at proof-time and we are left with the native meaning.
 
 For many operators on expressions (see \cref{sec:join-cross-subset} below), their implementations in Lean are overloaded to accomodate the fact that Lean prefers elements when they are elements and sets only when necessary, contrasted to Forge's `everything-is-a-set' approach. This allows us to produce semantically equivalent translations that are more simplified when possible leveraging Lean's type class system that is able to determine types of operands at the time of translation. 
 
@@ -250,6 +252,9 @@ In our translation, we want to be able to use the type \texttt{Student} intercha
 instance [f: Fintype α] : CoeDep Type (α : Type) (Set α) where
   coe := (f.elems : Set α)
 \end{leanimpl*}
+
+\subsection{Type Coercions}
+\todo{complete!}
 
 \subsection{Relational Joins, Cross, Inclusion, Equality}\label{sec:join-cross-subset}
 

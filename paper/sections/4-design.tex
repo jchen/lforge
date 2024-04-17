@@ -1,6 +1,6 @@
 % !TEX root = ../paper.tex
 \section{Design}
-\subsection{Design Summary}
+\subsection{Design Summary}\label{sec:design-summary}
 Lean 4 is a good target for our translation as well as a suitable language to implement our translation in because of the fact that Lean 4 is mostly implemented in itself. As users, we are able to utilize and emit the same data structures used in Lean's own implementation to extend the functionality of Lean \cite{moura2021lean}. These metaprogramming capabilities of Lean make our work implementing a Forge module in Lean much easier. 
 
 The Lean 4 compilation process is structured as in \cref{fig:lean-compilation}. 

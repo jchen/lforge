@@ -1,5 +1,11 @@
 import Lforge
 
+/-
+This is the classic 'barber who shaves themselves' example in logic.
+We can model this using a Forge specification and disprove the statement that
+there exists a barber using Lean. This is a toy example of our translation working
+-/
+
 sig Person {
   shaves: one Person
 }
@@ -15,10 +21,8 @@ pred existsBarber {
 }
 
 example : ¬ existsBarber := by
-  simp only [existsBarber, shavesThemselves]
-  simp only [Forge.HJoin.join, Forge.HIn.subset, Coe.coe]
-  intro heb
-  cases' heb with b hall
-  have h := hall b
+  simp [existsBarber, shavesThemselves]
+  intro b
+  existsi b
   tauto
   done

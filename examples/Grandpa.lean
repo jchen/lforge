@@ -1,5 +1,13 @@
 import Lforge
 
+/-
+This is a test file demonstrating basic translation, adapted
+from csci1710's "Modeling Intro" assignment:
+https://hackmd.io/@csci1710/B1NEG7jKa
+-/
+
+#lang forge
+
 sig Person {
   parent1 : lone Person,
   parent2 : lone Person,
@@ -7,7 +15,7 @@ sig Person {
 }
 
 pred isNotRelated[x: Person, y: Person] {
-  not x->y in ^parent1 + ^parent2
+  not x->y in ^(parent1 + parent2)
 }
 
 pred isParent[x: Person, y: Person] {
@@ -46,14 +54,17 @@ pred FamilyFact {
   }
 }
 
-
 pred ownGrandparent {
   -- Fill in a constraint that requires there to be a case where someone is their own grandpa.
   -- (Properly expressing what it means to be your own grandpa is crucial!)
-  some p, f, w, d: Person |
-  isParent[d, w] and isParent[p, f] and p.spouse = w and f.spouse = d
+  some m, p: Person |
+  isParent[m, p] and isParent[p, m]
 }
 
 -- While it can be fun to test this for more people your solution should
 -- be valid for exactly 4 Person
--- run {FamilyFact ownGrandparent} for exactly 4 Person
+-- run { FamilyFact ownGrandparent } for exactly 4 Person
+
+example : ¬ FamilyFact ∧ ownGrandparent := by
+  sorry
+  done

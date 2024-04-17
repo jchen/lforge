@@ -3,6 +3,12 @@ import Lforge
 /-
 The following is adapted from cs1710, modeling a mutex:
 https://csci1710.github.io/book/chapters/sets-and-boolean-logic/sets-induction-mutex.html
+
+Modifications were made to suit the model for potentially more than 2 processes!
+This is one of the benefits / selling points of our model.
+ - Processes can enter a 'Waiting' state with flags.
+ - A process can only enter the cricical state when an atomic check of all flags passes, that is, they are the only one with the flag raised.
+ - If they are not the only one with flag raised, they back off and try again at a later time.
 -/
 
 abstract sig Location {}
@@ -22,9 +28,18 @@ pred raise[pre: State, p: Process, post: State] {
   all p2: Process | p2 != p => post.loc[p2] = pre.loc[p2]
 }
 
+pred lower[pre: State, p: Process, post: State] {
+  -- Only lower when it cannot acquire the lock.
+  pre.flags != p
+  pre.loc[p] = Waiting
+  post.loc[p] = Uninterested
+  post.flags = pre.flags - p /* as Set Process */
+  all p2: Process | p2 != p => post.loc[p2] = pre.loc[p2]
+}
+
 pred enter[pre: State, p: Process, post: State] {
-  -- A process can only enter if it is currently not under contention
-  all p1: Process | pre.loc[p] != InCS
+  -- A process can only enter if it is the only thread in contention, that is, only thread with flag
+  pre.flags = p
   pre.loc[p] = Waiting
   post.loc[p] = InCS
   post.flags = pre.flags
@@ -46,6 +61,7 @@ pred init[s: State] {
 pred delta[pre: State, post: State] {
   some p: Process |
     raise[pre, p, post] or
+    lower[pre, p, post] or
     enter[pre, p, post] or
     leave[pre, p, post]
 }
@@ -65,6 +81,8 @@ pred properties {
   all pre, post : State | startGoodTransition[pre, post] => good[post]
 }
 
+-- This is equivalent to claiming `properties is theorem`
+
 -------- Proofs --------
 
 theorem init_good : ∀ s : State, init s → good s := by
@@ -82,7 +100,6 @@ theorem init_good : ∀ s : State, init s → good s := by
     simp at hr
   }
   {
-    -- rw [ExprQuantifier.lone, ExprQuantifier.no, ExprQuantifier.one]
     right
     refine Set.ext ?intro.right.h.h
     intro hp
@@ -150,6 +167,10 @@ theorem raise_transition_good (pre : State) (post : State) (g : good pre) : rais
   }
   done
 
+theorem lower_transition_good (pre : State) (post : State) (g : good pre) : lower pre p post → good post := by
+  sorry
+  done
+
 theorem enter_transition_good (pre : State) (post : State) (g : good pre) : enter pre p post → good post := by
   sorry
   done
@@ -157,7 +178,6 @@ theorem enter_transition_good (pre : State) (post : State) (g : good pre) : ente
 theorem leave_transition_good (pre : State) (post : State) (g : good pre) : leave pre p post → good post := by
   sorry
   done
-
 
 example : properties := by
   rw [properties]
@@ -167,8 +187,9 @@ example : properties := by
   }
   {
     intro pre post hstart
-    rcases hstart with ⟨h, ⟨p, ⟨hraise⟩ | ⟨henter⟩ | ⟨hleave⟩⟩⟩
+    rcases hstart with ⟨h, p, hraise | hlower | henter | hleave⟩
     exact raise_transition_good pre post h hraise
+    exact lower_transition_good pre post h hlower
     exact enter_transition_good pre post h henter
     exact leave_transition_good pre post h hleave
   }

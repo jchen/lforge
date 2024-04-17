@@ -58,6 +58,9 @@ Lean's error locality system allows its error monad to refer to any piece of syn
 
 \subsubsection{Types}
 
+Lean's dependent type system is both a blessing and a curse when it comes to the task of translating a language with a foreign type system into Lean. While the type system is a highly-optimized algorithm that attempts to resolve type coercions, type classes, and reductions \cite{de2015lean}, it at often delicate and temperamental, especially when we are working at such a low level of emitting Lean \texttt{expr}s, which happens \emph{after} type unification (see \cref{sec:elaboration}). We discuss some of the downsides of such a strict type system in \cref{sec:type-coercions}, and introduced \textsc{Lforge} features that circumvent Lean's restrictions and play into Lean's type system. 
+
+Here, we discuss some of the merits of implementing a DSL designed around Lean's extensive type system. One of the side effects of translating Forge into Lean is that we 
 
 \begin{figure}
   \centering

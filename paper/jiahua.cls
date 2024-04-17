@@ -513,8 +513,11 @@
   \RedeclareSectionCommand[afterskip=1sp minus 1sp]{section}% no skip after ToC title
 }\DeclareTOCStyleEntry[beforeskip=0.5em, entryformat=\bfseries]{section}{section}
 
-%fcolorboxes
+% fcolorboxes
 \renewcommand\fbox{\fcolorbox{lightgray}{white}}
+
+% Typesetting (widows and orphans)
+\RequirePackage[all]{nowidow}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% macros %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\recall}{\textit{Recall:} }

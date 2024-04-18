@@ -7,20 +7,20 @@ there exists a barber using Lean. This is a toy example of our translation worki
 -/
 
 sig Person {
-  shaves: one Person
+  shaver: one Person
 }
 
 pred shavesThemselves[p: Person] {
-  p = p.shaves
+  p = p.shaver
 }
 
 pred existsBarber {
-  some b : Person | all p : Person | {
-    not shavesThemselves[p] <=> b = p.shaves
+  some barber : Person | all p : Person | {
+    not shavesThemselves[p] <=> p.shaver = barber
   }
 }
 
-example : ¬ existsBarber := by
+theorem no_barber : ¬ existsBarber := by
   simp [existsBarber, shavesThemselves]
   intro b
   existsi b

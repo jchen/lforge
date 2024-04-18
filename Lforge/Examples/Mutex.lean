@@ -11,6 +11,8 @@ This is one of the benefits / selling points of our model.
  - If they are not the only one with flag raised, they back off and try again at a later time.
 -/
 
+#lang forge
+
 abstract sig Location {}
 one sig Uninterested, Waiting, InCS extends Location {}
 

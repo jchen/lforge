@@ -37,6 +37,8 @@
 *.synctex(busy)
 _minted-paper
 .vscode
+*.bcf
+*.run.xml
 
 # Install fonts, these are from Adobe Fonts :( [licensed]
 fonts/SolitaireMVBPro*

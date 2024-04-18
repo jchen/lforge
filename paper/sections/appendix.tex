@@ -1,0 +1,32 @@
+% !TEX root = ../paper.tex
+
+\section*{Appendices}
+\addcontentsline{toc}{section}{Appendices}
+\renewcommand{\thesubsection}{\Alph{subsection}}
+
+\subsection{Barber Paradox Proof}
+
+The proof to the barber paradox annotated with the Lean tactic state after each tactic/step is provided below. This is provided in file \todo{filepath} in the corresponding software artifact. 
+
+\begin{lean*}
+theorem no_barber : ¬ existsBarber := by
+  /-
+  ⊢ ¬existsBarber
+  -/
+  simp [existsBarber, shavesThemselves]
+  /-
+  ⊢ ∀ (x : Person), ∃ x_1, ¬(¬x_1 = shaver x_1 ↔ shaver x_1 = x)
+  -/
+  intro b
+  /-
+  b : Person
+  ⊢ ∃ x, ¬(¬x = shaver x ↔ shaver x = b)
+  -/
+  existsi b
+  /-
+  b : Person
+  ⊢ ¬(¬b = shaver b ↔ shaver b = b)
+  -/
+  tauto
+  done    
+\end{lean*}

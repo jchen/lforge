@@ -515,6 +515,7 @@
 
 % fcolorboxes
 \renewcommand\fbox{\fcolorbox{lightgray}{white}}
+\setlength{\fboxsep}{0pt}
 
 % Typesetting (widows and orphans)
 \RequirePackage[all]{nowidow}

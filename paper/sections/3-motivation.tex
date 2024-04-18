@@ -1,12 +1,59 @@
 % !TEX root = ../paper.tex
 \section{Motivation}
 
+\todo{complete}
 
+\subsection{A Toy Example}\label{sec:toy-example}
 
-\subsection{A Toy Example}
+We envision the workflow of someone using \textsc{Lforge} to be as follows: 
+\begin{enumerate}
+    \item The user specifies a model in interest, or they already have a completed model in Forge that they would like to formalize. Within Forge, the user writes relevant predicates and uses Forge's SAT backend to quickly check if they are satisfiable (and what satisfying instances look like), or if they are not satisfiable (that is, the negation is a theorem). Users might isolate specific predicates that they would like to prove in detail. 
+    \item In a new Lean file, the user imports the \textsc{Lforge} module and pastes their Forge specification in, verbatim. If they started the process working in the \textsc{Lforge} subset of Forge, no changes need to be made. If they are working with an existing Forge file, our tool will prompt the user to make any modifications necessary to keep it compliant with the subset of syntax, including potential type annotations (see \cref{sec:type-coercions}). After this, all sigs, fields, predicates are available in Lean. 
+    \item Optionally, a user might want to make \emph{additional} claims or write predicates using Lean's syntax. They have the option to do so here (see Mix-ins, \cref{sec:dsl}). 
+    \item Finally, the user will identify important predicates within their specification that they want to prove generally. They do so using the interactive theorem prover in Lean. 
+\end{enumerate}
 
-\begin{itemize}
-    \item A motivating example of why we might want to do this. Give an example of a Forge program and the limitations of the Forge solver. 
-    \item Maybe discuss the need for specification portability? 
-    \item Pedagogical implications? 
-\end{itemize}
+We start by providing a small example that might represent a Forge specification and the desired generated code in Lean as motivation behind this workflow. Bertrand Russell, in illustrating Russel's paradox on sets, poses the following paradox: ``Let the barber be `one who shaves all those, and those only, who do not shave themselves.' The question is, does the barber shave himself?'' \cite[101]{russell2009philosophy}. 
+
+We might want to construct a formal model for this village for which the barber shaves all those who do not shave themselves, and use Forge to prototype and quickly check properties regarding this model: 
+
+\begin{forge*}
+sig Person {
+  shaver: one Person
+}
+
+pred shavesThemselves[p: Person] {
+  p = p.shaver
+}
+
+pred existsBarber {
+  some barber : Person | all p : Person | {
+    not shavesThemselves[p] <=> p.shaver = barber
+  }
+}
+\end{forge*}
+
+Attempting to run this model for \texttt{existsBarber} will yield an \texttt{Unsatisfiable}. After all, if the barber doesn't shave themselves, yet they shave all those who don't, they they ought to shave themselves. To prove this statement (and not merely rely on the fact that Forge was not able to find a satisfiable instance within its bounds), we need to transition to a theorem prover. 
+
+\textsc{Lforge} aids in porting the entire specification into Lean, producing a set of equivalent Lean definitions: 
+
+\begin{lean*}
+opaque Person : Type
+opaque shaver : Person → Person
+
+def shavesThemselves : Person → Prop :=
+  fun p ↦ shaver p p
+
+def existsBarber : Prop :=
+  ∃ (barber : Person), ∀ (p : Person), ¬shavesThemselves p ↔ shaver p barber
+\end{lean*}
+At this point, we might want to continue to provide a mathematical proof, as we observed in Forge, that there cannot possibly be a barber in this town. That is, 
+
+\begin{lean*}
+theorem no_barber : ¬ existsBarber := by ...
+\end{lean*}
+The conclusion of this example, including the Lean proof of our property, is provided in \cref{sec:toy-example-continued}. Note that this was not possible working solely in Forge, which only checks for the existence of examples or counterexamples within the bounds that it knows. 
+
+While this was a simple example, it serves as a demonstration of what is possible under this dual framework. One might provide a specification of a protocol and prove that no vulnerabilities exist (or that it has all the desired properties). Lean would serve invaluable in proving the correctness of properties about any real-life system described and prototyped in the Forge specification language. All this stays true to the goal of providing better formal methods tools that are more universally applicable and practical. 
+
+Furthermore, the pedagogical implications of such a program is also worth noting. Forge, designed to be a pedagogical language, seeks to teach formal methods gradually and introduce students to formal methods tools enabling them to work better in the real world and industry \cite{ngpdbccdlrrvwwk-oopsla-2024}. Students who are interested in formal methods often take Logic for Systems in the Computer Science department at Brown, the course which Forge was developed for and taught in. Students continue on to take Formal Proof and Verification, a course that teaches the use of proof assistants via Lean. Both courses have open-ended research-style final projects that encourages students to explore and formalize topics that they are interested in. We believe \textsc{Lforge} also provides an invaluable opportunity for students who have background with both formal methods tools (or who might merely want to explore beyond) to bridge their knowledge between automated reasoning and formalization via proof. While Forge instructs us that a specification or predicate is true, Lean reveals \emph{why} the specification is true. Oftentimes, this makes it difficult to debug incorrect specifications without additional tools like visualizations \cite{ngpdbccdlrrvwwk-oopsla-2024}. By attempting to construct proofs of model properties, students are compelled to think about their modeling choices and justify each statement, seamlessly translating between the statements they are making and proofs of their correctness \cite{avigad2019learning}. 

@@ -1,14 +1,10 @@
 import Lake
 open Lake DSL
 
-package «lforge» {
-  -- add any package configuration options here
-}
+package Lforge
 
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git"
 
 @[default_target]
-lean_lib «Lforge» {
-  -- add any library configuration options here
-}
+lean_lib Lforge

@@ -11,8 +11,6 @@ This is one of the benefits / selling points of our model.
  - If they are not the only one with flag raised, they back off and try again at a later time.
 -/
 
-#lang forge
-
 abstract sig Location {}
 one sig Uninterested, Waiting, InCS extends Location {}
 
@@ -23,8 +21,11 @@ sig State {
   flags: set Process
 }
 
+def flags_good (s : State) :=
+  ∀ (p : Process), loc s p = InCS ∨ loc s p = Waiting → flags s p
+
 pred good[s: State] {
-  all p: Process | (s.loc[p] = InCS or s.loc[p] = Waiting) implies p in s.flags
+  flags_good[s]
   lone {p: Process | s.loc[p] = InCS}
 }
 

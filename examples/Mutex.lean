@@ -86,7 +86,6 @@ pred properties {
 
 -- Proofs
 
-
 theorem init_good : ∀ s : State, init s → good s := by
   intro s his
   simp [init] at his

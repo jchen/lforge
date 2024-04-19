@@ -39,6 +39,7 @@ _minted-paper
 .vscode
 *.bcf
 *.run.xml
+*.bbl-SAVE-ERROR
 
 # Install fonts, these are from Adobe Fonts :( [licensed]
 fonts/SolitaireMVBPro*

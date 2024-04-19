@@ -105,7 +105,43 @@ While simple, this example demonstrates the expressiveness of Forge programs emb
 
 \subsection{A Mutual-Exclusion Protocol}\label{sec:mutex}
 
-\begin{itemize}
-  \item Circle back to the earlier example
-  \item A more complicated example, potentially with Lean mixins?
-\end{itemize}
+Here, we present a more comprehensive example that showcases more of the functionalities of \textsc{Lforge} and hopefully motivates real-world use cases of our tool. We model a basic mutual exclusion (mutex) protocol based on one of the examples presented in CSCI 1710 Logic for Systems \cite{l4s}. In the course, the example is posed with 2 competing processes over a mutex. Empowered with Forge within \textsc{Lforge}, we expand the model to include any number of processes. 
+
+The example model contains \texttt{State} sigs that encapsulate the state of the entire system. Processes can have several states, \texttt{Uninterested}, \texttt{Waiting} (interested but not in critical state), \texttt{InCS} (in critical state). Each state contains a set of processes that have a flag raised demonstrating they are potentially interested in mutex. State transitions are modeled using predicates, which are of the form
+
+\begin{forge*}
+pred transition[pre: State, p: Process, post: State] { ... }
+\end{forge*}
+Processes have 4 transitions: 
+\begin{enumerate}
+  \item \texttt{raise}: they can transitions from \texttt{Uninterested} to \texttt{Waiting} by raising their flag;
+  \item \texttt{enter}: they can transition from \texttt{Waiting} to \texttt{InCS} provided they are the only flag raised;
+  \item \texttt{lower}: if there is more than one flag raised, they can transition from \texttt{Waiting} back to \texttt{Uninterested} by lowering the flag;
+  \item \texttt{leave}: they can transition from \texttt{InCS} to \texttt{Uninterested} when processes are done.
+\end{enumerate}
+
+We write a \texttt{good} predicate that states an invariant of our model that we wish to be true. In our case, the \texttt{good} predicate stipulates no two processes can be in the critical state (have acquired the lock) on the mutex at the same time, and any process that is waiting or in a critical state has a `flag' raised. We define an \texttt{init} state predicate that states all processes are in a state of \texttt{Uninterested} and no flags are raised. A predicate titled \texttt{properties} (users sometimes use the convention \texttt{traces}) encapsulates all properties of our system: that the initial state is good and for all pairs $\langle\texttt{pre}, \texttt{post}\rangle$ for which there is a transition between, $\texttt{pre}$ is good implies $\texttt{post}$ is good. This is to say, $\texttt{good}$ is an invariant property given our transition rules. 
+
+To test our model and that it indeed has such desired properties, we can first run Forge on the test \texttt{properties is theorem} to check that Forge cannot solve for counterexamples within its specified bounds. Then, as a next step, we can declare a theorem that states \texttt{properties} in Lean and prove our theorem. 
+
+To prove \texttt{properties}, we can split up our property into the base case (proving that the \texttt{init} state is \texttt{good}) and that each of the 4 transitions preserves \texttt{properties}. We prove each transition separately in lemmas. 
+
+An example of the tactic state during one of the proofs of one such lemma is showcased in \cref{fig:mutex-proof}. We note that the tactic state in \cref{fig:mutex-proof} represents a typical Lean proof state and what a user might encounter while using \textsc{Lforge} and Lean to prove specification properties, as opposed to our toy proof in \cref{fig:barber-proof}. 
+
+For a rough reference of length, our specification is roughly 70 lines long and our proof is roughly 250 lines long, which is standard for each. Neither the specification nor proof were more involved than had they been solely in Forge or Lean respectively. The full source of this example is referenced in \cref{appendix:mutex-proof}. 
+
+\begin{figure}[h!]
+  \centering
+  \fbox{\includegraphics[width=\textwidth-1pt,trim={0 0 0 0},clip]{images/screenshots/mutex-proof.png}}
+  \caption{The Lean tactic state at one line of our proof that the \texttt{raise} transition is sound. }
+  \label{fig:mutex-proof}
+\end{figure}
+
+\subsection{Further Examples}
+We provide three further examples (without proofs), to illustrate \textsc{Lforge}'s translation capabilities. Said examples translate fully using \textsc{Lforge} without any type errors. 
+
+From the Logic for Systems course \cite{l4s}, we adapt the first Forge assignment on family trees, as well as the in-class example with a Tic-Tac-Toe board. Our examples are minimally modified specifications from the course and demonstrate \textsc{Lforge}'s capabilities of working with existing Forge specifications with little-to-no modification. 
+
+Additionally, inspired by an ongoing research project that uses Forge to model distributed systems algorithms \cite{distributedforge}, we also model the two-phase atomic commitment protocol. Our example is an entirely new Forge specification that takes inspiration from this existing research. This serves as a more complex example of a system that might be valuable to be modeled in Forge and proven in Lean. 
+
+The sources of said examples are referenced and specified further in \cref{appendix:additional-examples}. 

@@ -163,6 +163,99 @@
       \field{pages}{66\bibrangedash 76}
       \range{pages}{11}
     \endentry
+    \entry{milicevic2015advancing}{thesis}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{1}{}{%
+        {{hash=f111ea157619da93aaa7565275f40493}{%
+           family={Milicevic},
+           familyi={M\bibinitperiod},
+           given={Aleksandar},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Massachusetts Institute of Technology}%
+      }
+      \strng{namehash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{fullhash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{bibnamehash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{authorbibnamehash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{authornamehash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{authorfullhash}{4cb1789b7f3571d45723843d722cf0c5}
+      \field{extraname}{1}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Advancing declarative programming}
+      \field{type}{phdthesis}
+      \field{year}{2015}
+    \endentry
+    \entry{milicevic2010executable}{thesis}{}
+      \true{moreauthor}
+      \true{morelabelname}
+      \name{author}{1}{}{%
+        {{hash=f111ea157619da93aaa7565275f40493}{%
+           family={Milicevic},
+           familyi={M\bibinitperiod},
+           given={Aleksandar},
+           giveni={A\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Massachusetts Institute of Technology}%
+      }
+      \strng{namehash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{fullhash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{bibnamehash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{authorbibnamehash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{authornamehash}{4cb1789b7f3571d45723843d722cf0c5}
+      \strng{authorfullhash}{4cb1789b7f3571d45723843d722cf0c5}
+      \field{extraname}{2}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Executable specifications for Java programs}
+      \field{type}{mathesis}
+      \field{year}{2010}
+    \endentry
+    \entry{milicevic2014alpha}{inproceedings}{}
+      \name{author}{3}{}{%
+        {{hash=f111ea157619da93aaa7565275f40493}{%
+           family={Milicevic},
+           familyi={M\bibinitperiod},
+           given={Aleksandar},
+           giveni={A\bibinitperiod}}}%
+        {{hash=be27c5c9045e27c18d78b5a83e0a086d}{%
+           family={Efrati},
+           familyi={E\bibinitperiod},
+           given={Ido},
+           giveni={I\bibinitperiod}}}%
+        {{hash=cb6c47b8514016726e35197230c2f7d6}{%
+           family={Jackson},
+           familyi={J\bibinitperiod},
+           given={Daniel},
+           giveni={D\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{6d73dedbe990ccb324e031d297258794}
+      \strng{fullhash}{6d73dedbe990ccb324e031d297258794}
+      \strng{bibnamehash}{6d73dedbe990ccb324e031d297258794}
+      \strng{authorbibnamehash}{6d73dedbe990ccb324e031d297258794}
+      \strng{authornamehash}{6d73dedbe990ccb324e031d297258794}
+      \strng{authorfullhash}{6d73dedbe990ccb324e031d297258794}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Abstract State Machines, Alloy, B, TLA, VDM, and Z: 4th International Conference, ABZ 2014, Toulouse, France, June 2-6, 2014. Proceedings 4}
+      \field{title}{$\alpha$ Rby—an embedding of Alloy in Ruby}
+      \field{year}{2014}
+      \field{pages}{56\bibrangedash 71}
+      \range{pages}{16}
+    \endentry
     \entry{moura2021lean}{inproceedings}{}
       \name{author}{2}{}{%
         {{hash=04ffe79f369bf9f16e299fcf4f98e780}{%
@@ -229,6 +322,33 @@
       \field{booktitle}{14th International Conference on Interactive Theorem Proving (ITP 2023)}
       \field{title}{An extensible user interface for Lean 4}
       \field{year}{2023}
+    \endentry
+    \entry{l4s}{book}{}
+      \name{author}{1}{}{%
+        {{hash=e244106fe04f88ec834643bef86e921e}{%
+           family={Nelson},
+           familyi={N\bibinitperiod},
+           given={Tim},
+           giveni={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{e244106fe04f88ec834643bef86e921e}
+      \strng{fullhash}{e244106fe04f88ec834643bef86e921e}
+      \strng{bibnamehash}{e244106fe04f88ec834643bef86e921e}
+      \strng{authorbibnamehash}{e244106fe04f88ec834643bef86e921e}
+      \strng{authornamehash}{e244106fe04f88ec834643bef86e921e}
+      \strng{authorfullhash}{e244106fe04f88ec834643bef86e921e}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Logic for Systems}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://csci1710.github.io/book/
+      \endverb
+      \verb{url}
+      \verb https://csci1710.github.io/book/
+      \endverb
     \endentry
     \entry{ngpdbccdlrrvwwk-oopsla-2024}{article}{}
       \name{author}{15}{}{%

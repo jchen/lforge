@@ -10,7 +10,7 @@ The source code for \textsc{Lforge}, including all mentioned examples and proofs
 
 \subsection[]{Barber Paradox Proof}\label{appendix:barber-proof}
 
-The proof of the barber paradox annotated with the Lean tactic state after each tactic/step is provided below. This is also provided in a file at this path in the code repository: \texttt{examples/Barber.lean}\todo{check filepath}. 
+The proof of the barber paradox annotated with the Lean tactic state after each tactic/step is provided below. This is also provided at this path in the code repository: \texttt{examples/Barber.lean}\todo{check filepath}. 
 
 \begin{lean*}
 theorem no_barber : ¬ existsBarber := by
@@ -34,3 +34,15 @@ theorem no_barber : ¬ existsBarber := by
   tauto
   done    
 \end{lean*}
+
+\subsection[]{Mutual Exclusion Protocol Specification \& Proofs}\label{appendix:mutex-proof}
+The Forge specification and Lean proofs for the mutual exclusion protocol described in \cref{sec:mutex} are provided at this path in the code repository: \texttt{examples/Mutex.lean}. The specification spans lines 14--85 and proofs span lines 89--336. 
+
+The Forge specification for this example is taken from \cite{l4s} with slight modifications for more than two processes. We contribute the entirety of the Lean proof of correctness of this protocol. 
+
+\subsection[]{Additional Examples}\label{appendix:additional-examples}
+Additional examples are also provided in the \texttt{examples} directory. 
+
+Two examples, Tic-Tac-Toe and `Grandpa', are based on course content from Logic for Systems \cite{l4s} with minimal modifications. They serve solely to illustrate the capabilities of \textsc{Lforge} on translating existing programs, and we do not claim to make additional contributions to these models. Tic-Tac-Toe is at the following path: \texttt{examples/Board.lean}, and the `Grandpa' is at the following path: \texttt{examples/Grandpa.lean}. 
+
+The specification regarding the two-phase atomic commitment protocol is inspired by \cite{distributedforge} but does not use any code directly from the repository. This serves as an example of a more complex distributed system protocol that is translatable. 

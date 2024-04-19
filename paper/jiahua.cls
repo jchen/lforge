@@ -511,7 +511,7 @@
 \BeforeTOCHead[toc]{%
   \KOMAoptions{parskip=false}% no parskip in ToC
   \RedeclareSectionCommand[afterskip=1sp minus 1sp]{section}% no skip after ToC title
-}\DeclareTOCStyleEntry[beforeskip=0.5em, entryformat=\bfseries]{section}{section}
+}\DeclareTOCStyleEntry[beforeskip=0.4em, entryformat=\bfseries]{section}{section}
 
 % fcolorboxes
 \renewcommand\fbox{\fcolorbox{lightgray}{white}}

@@ -2,33 +2,38 @@
 \section{Implementation Details and Challenges}
 
 \subsection{Finiteness of Forge Sigs}\label{sec:finiteness}
-Recall as summarized in \cref{sec:forge-model} that Forge Sigs get (most naturally) translated to Lean Types. However, we need to be cautious using this as a drop-in replacement for the concept of sigs. While we don't have soundness and completeness guarantees, we ought to feel confident that our translation preserves the semantics of Forge faithfully. \todo{SK: I'm curious about this statement; it at least deserves elaboration. I see no reason why we can't get some kinds of formal guarantees, since we're going from a formalized object to a formalized object.}
+Recall as summarized in \cref{sec:forge-model} that Forge Sigs get (most naturally) translated to Lean Types. However, we need to be cautious using this as a drop-in replacement for the concept of sigs. While we don't have soundness and completeness guarantees, we ought to feel confident that our translation preserves the semantics of Forge faithfully\footnote{See \cref{sec:future-work} for a discussion of formal guarantees.}. 
 
 One semantic difference in translating Forge Sigs into Lean Types directly is that we lose all sig `finiteness guarantees' that came with Forge. Since Forge compiles to a bounded SAT problem, all sigs are finitely bounded. This means that we can rely on the assumption that sets of sigs are all finite sets. 
 
-For example, we could write a specification of a path through a graph with one source node and claim that this path will never be injective:\todo{Fix this model it's incorrect!}
+For example, we could write a specification of graph with an injective \texttt{next} function and the existence of root node that is not in the pre-image of \texttt{next}. 
 \begin{forge*}
 sig Node {
   next: one Node
 }
 
-pred notInjective {
-  not ( all a, b: Node | 
-    a.next = b.next => a = b )
+pred injective {
+  all a, b : Node | 
+    a.next = b.next => a = b
+}
+
+pred someRoot {
+  some r : Node | 
+    no next.r
 }
 \end{forge*}
-For any number of \texttt{Node} sigs we initialize Forge with (that is, for any bandwidth), Forge will be able to tell us that \texttt{notInjective} is theorem. 
+For any number of \texttt{Node} sigs we initialize Forge with (that is, for any bandwidth), Forge will be able to tell us that \texttt{¬ (injective ∧ someRoot)} is theorem (that is, no such relation can exist). 
 
-Yet, in the Lean formulation of this specification, we realize that \texttt{notInjective} need not be true at all. If we tried to prove the same in Lean, we realize that it isn't actually possible to prove the injectivity of our next relation. In fact, if we conjured our type \texttt{Node} with the same structure as $\NN$, we would have a perfectly valid \texttt{next} function (think \texttt{succ}) that is not injective. 
+Yet, in the Lean formulation of this specification, we realize that \texttt{injective ∧ someRoot} could be true! If we tried to prove the same in Lean, we realize that it isn't actually possible to prove the injectivity of our next relation. In fact, if we conjured our type \texttt{Node} with the same structure as $\NN$, we would have a perfectly valid \texttt{next} function (\texttt{succ}) that is injective and $0$ has no predecessor. 
 
-The disparity between the Forge and Lean models is that while Forge models are finitely inhabited (albeit, arbitrarily so), Lean makes no assumption about the size of models or types and requires explicit statements of finiteness of types. Pertaining to the example above, we would want to be able to prove the nonexistence of such an injective function using the translated facts produced by our module. \todo{SK: I think there are two things being conflated here: domain bounds and finiteness. Domain bounds obviously imply finiteness but not vice versa.}
+The disparity between the Forge and Lean models is that while Forge models are bounded, Lean makes no assumption about the size of models or types and requires us to make explicit statements of finiteness of types. For the semantics of Lean to match that of Forge being finite, we need guarantees that any types from Lean sigs are finite types. 
 
 Our solution is to include additional local instance axioms for every opaque sig that is translated from Forge and introduced to our Lean environment. In this case: 
 \begin{lean*}
 @[instance] axiom inhabited_node : Inhabited Node
 @[instance] axiom fintype_node : Fintype Node
 \end{lean*}
-which gives us guarantees that \texttt{Node} is both inhabited and contains a finite number of elements within the type. To illustrate, our proof of \texttt{notInjective} would utilize the pigeon hole principle and appeal to the fact that \texttt{Node} is finitely inhabited. 
+which gives us guarantees that \texttt{Node} is both inhabited\footnote{We are required to do this to, say, create functions and subtypes on these types. See \cref{sec:sigs} for how we handle the \texttt{abstract} quantifier.} and contains a finite number of elements within the type. To illustrate, our proof of \texttt{injective ∧ someRoot} would utilize the pigeon hole principle and appeal to the fact that \texttt{Node} is finitely inhabited, and that for a root node to exist there must be a node that has 2 predecessors. 
 
 We discuss further in \cref{sec:integers} how these instances enable us to perform integer and cardinality operations on sigs and translated Forge expressions. 
 
@@ -125,12 +130,15 @@ Such an analysis and translation of inheritance requires a global processing of 
 
 For the remaining of sig quantifiers like \texttt{one} and \texttt{lone}, because of their complex interactions with inheritance (a \texttt{one} sig means that there is only one inhabited member of that sig that \emph{is not} any child sig, contrary to our intuition as to what a \texttt{one} or \texttt{lone} sig should be), our program prompts the user to write a customized axiom in Lean expressing their desired constraint. Note that this utilizes the seamless integration of Forge into Lean that makes such a solution of mixed execution possible. Anecdotally, \texttt{one} and \texttt{lone} sigs only apply to child sigs and the \texttt{abstract} quantification is only used on parent sigs (it doesn't make sense for a non-inherited sig to be \texttt{abstract}), so we expect that manual handling of sig quantifications to be an edge case. 
 
+\todo{Discuss axioms that have that all subtypes are disjoint.}
+
 \subsection{``Everything is a Set''}\label{sec:everything-is-a-set}
 \subsubsection{Overloaded operations}
 The predominantly relational nature of Forge introduces another point of friction between our translation from Forge to Lean. In Forge, every expression is implicitly a relation or a set (set when that expression has arity-1\footnote{The notation we use is that a \texttt{Set α}, which has equivalent type \texttt{α → Prop}, has arity-1, and so on. This is the arity convention in Forge and aligns with Lean's definitions of relations.}). Even when we know that an expression is a relation or set with cardinality 1 (for example, it could be introduced as a binder from a quantification), they are used as if they were a singleton set in Forge expressions that expect a set as an operand. Under the hood, all expressions in Forge are treated as a set (or multi-arity relation). 
 
 This everything-is-a-set approach of Forge allows the following expression (within the existential quantifier), translated ``there is some \texttt{Student} who is their own friend'': 
 
+\newpage
 \vspace{0.5em}
 \noindent\begin{minipage}{0.5\textwidth}
 \begin{forge*}
@@ -255,6 +263,13 @@ instance [f: Fintype α] : CoeDep Type (α : Type) (Set α) where
 
 \subsection{Typing \& Type Coercions}\label{sec:type-coercions}
 \todo{complete!}
+{\color{OliveGreen}
+\begin{itemize}
+  \item Discuss the different ways of representing a type in \textsc{Lforge}.
+  \item \texttt{α}, \texttt{Set α}, \texttt{α -> Prop}, etc. 
+  \item Even more for multi-arity, \texttt{Set (a × b)}, \texttt{a -> b -> Prop}, etc are all different. We need to address these when doing \cref{sec:join-cross-subset}. 
+  \item Sometimes, Lean cannot infer explicit types, we've added the \texttt{T /* as Set T */} syntax for explicit conversions. 
+\end{itemize}}
 
 \subsection{Relational Joins, Cross, Inclusion, Equality}\label{sec:join-cross-subset}
 

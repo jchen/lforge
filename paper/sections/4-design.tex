@@ -49,7 +49,7 @@ For example, the grammar\footnote{Where $,+$ and $,*$ denote one/zero or more co
 \end{center}
 
 Which we can translate into a corresponding syntax definition in Lean:
-\begin{leanimpl}
+\begin{leanimpl*}
 declare_syntax_cat f_arg
 syntax ident,+ ":" f_expr : f_arg
 
@@ -58,20 +58,20 @@ syntax f_arg,* : f_args
 
 declare_syntax_cat f_pred
 syntax "pred" ident ("[" f_args "]")? "{" f_fmla* "}" : f_pred
-\end{leanimpl}
+\end{leanimpl*}
 
 Following this blueprint, we can translate the entirety of the grammar of Forge\footnote{At least, a useful subset of the Forge language we care about. This is based off the grammar of Alloy \cite{jackson2012software,jackson2019alloy,ngpdbccdlrrvwwk-oopsla-2024}.} into Lean syntax definitions. This is provided in our package as the \texttt{Lforge.Ast} module (see \cref{appendix:code}).
 
 What remains to be done is to convert syntax, almost one-to-one, into an AST for Forge, and then \emph{elaborate} (see \cref{sec:elaboration}) our AST into Lean expressions and declarations.
 
-\begin{leanimpl}
+\begin{leanimpl*}
 structure Predicate where
   name : Symbol
   name_tok : Syntax
   args : List (Symbol × Expression) -- (name, type) pairs
   body : Formula -- with args bound
   deriving Repr, Inhabited   
-\end{leanimpl}
+\end{leanimpl*}
 
 The associated structure definitions of the Forge AST is a deep embedding of Forge into Lean. Our overall parser has type \texttt{TSyntax `f_program → MetaM ForgeModel}\footnote{`Sub-parsers', like the one that parses single predicate declarations, are typed \texttt{TSyntax `f_pred → MetaM Predicate}.}, where \texttt{f_program} is the top-level syntax category for Forge programs (lists of sigs, predicates, and functions), and \texttt{MetaM} is a metaprogramming monad that provides us with error reporting. Using this, we can then implement a translation of our Forge model into native Lean expressions and types. 
 
@@ -86,6 +86,12 @@ Our elaboration function takes care of elaborating sigs and fields into their co
 \subsection{The Forge Model in Lean}\label{sec:forge-model}
 Here we outline the majority of the Forge concepts, and if supported, give an overview of their corresponding Lean equivalents. 
 
-\todo{Complete, this is mostly a table of Forge concepts and translations in Lean.}
+{\color{OliveGreen}
+\begin{itemize}
+  \item Basically, a table of translations. 
+\end{itemize}
+}
+
+\todo{Complete. This is mostly a table of Forge concepts and translations in Lean.}
 
 % Table of things in Forge and their translation in Lean

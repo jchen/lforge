@@ -13,19 +13,9 @@ In doing so, \textsc{Lforge} serves as a model of what specification portability
 \newpage
 \section*{Acknowledgements}
 
-\vfill
-
-\subsubsection*{Colophon}
-\begin{minipage}{0.7\textwidth}
-\raggedright\small
-This document is typeset using \XeLaTeX\ with the \texttt{scrbook} document class. The bibliography is processed using Biblatex. Source code listings utilize the \texttt{minted} package and syntax is highlighted using \emph{Pygments}.
-\vspace{0.5em}
-
-Serif text is set in Computer Modern, sans serif text is set in \textsf{MVB Solitaire Pro}, and code is set in \texttt{\footnotesize DejaVu Sans Mono}. 
-\vspace{0.5em}
+\todo{Write Acks}
 
 No large language models were involved in the writing of this thesis.
-\end{minipage}
 
 \newpage
 {
@@ -40,8 +30,9 @@ Throughout this paper, you might encounter some visual or symbolic notation that
 
 ``$\bowtie$'' denotes the relational join operator. If $x: A \to B$ is a relation and $y: B \to C$ is a relation, then $x\bowtie y$ produces the relation $A\to C$ merged on common values in the rightmost ($B$) column of $x$ and the leftmost ($B$) column of $y$. $x$ and $y$ can be of arbitrary arity, so long as their leftmost and rightmost columns respectively match. 
 
-Code snippets and listings have been included in this paper to serve as examples, motivation, or to provide implementation details. Where they are included, the color of the code block denotes the source language and context. \todo{fix according to feedback}
+Code snippets and listings have been included in this paper to serve as examples, motivation, or to provide implementation details. Where they are included, the color of the code block denotes the source language and context. 
 
+The following is an example of a Lean implementation code block:
 \begin{leanimpl}
 -- This is the code block for the Lean implementation of our translation
 def forgeEnsureHasType (expectedType? : Option Expr) (e : Expr)
@@ -53,8 +44,9 @@ def forgeEnsureHasType (expectedType? : Option Expr) (e : Expr)
   else
     mkCoe expectedType e f? errorMsgHeader?
 \end{leanimpl}
-is an example of a Lean implementation code block. This denotes code from the implementation of the translation from Forge to Lean. This encompasses the parsing and elaboration of Forge syntax within Lean, and is most often the metaprogramming implementation of Forge in Lean. 
+This denotes code from the implementation of the translation from Forge to Lean. This encompasses the parsing and elaboration of Forge syntax within Lean, and is most often the metaprogramming implementation of Forge in Lean. 
 
+The following is an example of a Forge code block: 
 \begin{forge}
 -- This is the code block for a snippet of a model specification in Forge
 sig Node {
@@ -64,8 +56,9 @@ pred connected[a : Node, b : Node] {
   b in a.neighbors
 }
 \end{forge}
-is an example of a Forge code block. This denotes examples of a model (or a snippet of a model) in Forge. 
+This denotes examples of a model specification (or a snippet of a model) in Forge. 
 
+The following is an example of a Lean translation code block:
 \begin{lean}
 -- This is the code block for the translated Lean equivalent of a Forge snippet
 opaque Node : Type
@@ -74,4 +67,4 @@ opaque neighbors : Node → Node → Prop
 def connected (a : Node) (b : Node) : Prop :=
   neighbors a b
 \end{lean}
-is an example of a Lean translation code block. This denotes examples of the translated version of a Forge model or snippet. This is oftentimes the translated Lean code that is emitted our of our program. 
+This denotes examples of the translated version of a Forge model or snippet. This is oftentimes the translated Lean code that is emitted our of our program. 

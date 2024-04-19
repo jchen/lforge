@@ -4,7 +4,7 @@ _Lforge_ is an implementation of Forge/Alloy syntax via a translation as a langu
 
 ## Installation
 
-To use Lforge in your project, add the following to your `lakefile.lean`: 
+To use Lforge in your project, add the following line to your `lakefile.lean`: 
 ```
 require Lforge from git "https://github.com/jchen/lforge.git"
 ```

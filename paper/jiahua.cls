@@ -520,6 +520,9 @@
 % Typesetting (widows and orphans)
 \RequirePackage[all]{nowidow}
 
+\RequirePackage{caption}
+\captionsetup[figure]{labelsep=space}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% macros %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\recall}{\textit{Recall:} }
 

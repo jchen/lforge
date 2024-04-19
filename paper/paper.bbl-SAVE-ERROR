@@ -1,0 +1,449 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global}
+    \entry{avigad2019learning}{article}{}
+      \name{author}{1}{}{%
+        {{hash=b31cc4b873359c0cebe17020de111a47}{%
+           family={Avigad},
+           familyi={A\bibinitperiod},
+           given={Jeremy},
+           giveni={J\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{b31cc4b873359c0cebe17020de111a47}
+      \strng{fullhash}{b31cc4b873359c0cebe17020de111a47}
+      \strng{bibnamehash}{b31cc4b873359c0cebe17020de111a47}
+      \strng{authorbibnamehash}{b31cc4b873359c0cebe17020de111a47}
+      \strng{authornamehash}{b31cc4b873359c0cebe17020de111a47}
+      \strng{authorfullhash}{b31cc4b873359c0cebe17020de111a47}
+      \field{sortinit}{A}
+      \field{sortinithash}{2f401846e2029bad6b3ecc16d50031e2}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Proof technology in mathematics research and teaching}
+      \field{title}{Learning logic and proof with an interactive theorem prover}
+      \field{year}{2019}
+      \field{pages}{277\bibrangedash 290}
+      \range{pages}{14}
+    \endentry
+    \entry{de2015lean}{inproceedings}{}
+      \name{author}{5}{}{%
+        {{hash=6f56e279fa3378e39f74c27d62149c2c}{%
+           family={De\bibnamedelima Moura},
+           familyi={D\bibinitperiod\bibinitdelim M\bibinitperiod},
+           given={Leonardo},
+           giveni={L\bibinitperiod}}}%
+        {{hash=d9c9513662174e27d426f64146b056d7}{%
+           family={Kong},
+           familyi={K\bibinitperiod},
+           given={Soonho},
+           giveni={S\bibinitperiod}}}%
+        {{hash=b31cc4b873359c0cebe17020de111a47}{%
+           family={Avigad},
+           familyi={A\bibinitperiod},
+           given={Jeremy},
+           giveni={J\bibinitperiod}}}%
+        {{hash=f77c6ebdaed62962f49d25ea280a0ac4}{%
+           family={Van\bibnamedelima Doorn},
+           familyi={V\bibinitperiod\bibinitdelim D\bibinitperiod},
+           given={Floris},
+           giveni={F\bibinitperiod}}}%
+        {{hash=958711fe05928f429fa93d19f5e6c43b}{%
+           family={Raumer},
+           familyi={R\bibinitperiod},
+           given={Jakob},
+           giveni={J\bibinitperiod},
+           prefix={von},
+           prefixi={v\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Springer International Publishing}%
+      }
+      \strng{namehash}{e808082750571706f93735d924a283b7}
+      \strng{fullhash}{09a3183afd5fff9ea534743e15558a0b}
+      \strng{bibnamehash}{e808082750571706f93735d924a283b7}
+      \strng{authorbibnamehash}{e808082750571706f93735d924a283b7}
+      \strng{authornamehash}{e808082750571706f93735d924a283b7}
+      \strng{authorfullhash}{09a3183afd5fff9ea534743e15558a0b}
+      \field{sortinit}{D}
+      \field{sortinithash}{6f385f66841fb5e82009dc833c761848}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Automated Deduction-CADE-25: 25th International Conference on Automated Deduction, Berlin, Germany, August 1-7, 2015, Proceedings 25}
+      \field{title}{The Lean theorem prover (system description)}
+      \field{year}{2015}
+      \field{pages}{378\bibrangedash 388}
+      \range{pages}{11}
+    \endentry
+    \entry{edwards2004type}{article}{}
+      \name{author}{3}{}{%
+        {{hash=aa5d3f83b8c92aa398c6b04c604218c3}{%
+           family={Edwards},
+           familyi={E\bibinitperiod},
+           given={Jonathan},
+           giveni={J\bibinitperiod}}}%
+        {{hash=cb6c47b8514016726e35197230c2f7d6}{%
+           family={Jackson},
+           familyi={J\bibinitperiod},
+           given={Daniel},
+           giveni={D\bibinitperiod}}}%
+        {{hash=891b5b8af87210ad697663a0f5e1e379}{%
+           family={Torlak},
+           familyi={T\bibinitperiod},
+           given={Emina},
+           giveni={E\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {ACM New York, NY, USA}%
+      }
+      \strng{namehash}{3199dfb0c440adcda1c24b21f5cef425}
+      \strng{fullhash}{3199dfb0c440adcda1c24b21f5cef425}
+      \strng{bibnamehash}{3199dfb0c440adcda1c24b21f5cef425}
+      \strng{authorbibnamehash}{3199dfb0c440adcda1c24b21f5cef425}
+      \strng{authornamehash}{3199dfb0c440adcda1c24b21f5cef425}
+      \strng{authorfullhash}{3199dfb0c440adcda1c24b21f5cef425}
+      \field{sortinit}{E}
+      \field{sortinithash}{8da8a182d344d5b9047633dfc0cc9131}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{ACM SIGSOFT Software Engineering Notes}
+      \field{number}{6}
+      \field{title}{A type system for object models}
+      \field{volume}{29}
+      \field{year}{2004}
+      \field{pages}{189\bibrangedash 199}
+      \range{pages}{11}
+    \endentry
+    \entry{jackson2019alloy}{article}{}
+      \name{author}{1}{}{%
+        {{hash=cb6c47b8514016726e35197230c2f7d6}{%
+           family={Jackson},
+           familyi={J\bibinitperiod},
+           given={Daniel},
+           giveni={D\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {ACM New York, NY, USA}%
+      }
+      \strng{namehash}{cb6c47b8514016726e35197230c2f7d6}
+      \strng{fullhash}{cb6c47b8514016726e35197230c2f7d6}
+      \strng{bibnamehash}{cb6c47b8514016726e35197230c2f7d6}
+      \strng{authorbibnamehash}{cb6c47b8514016726e35197230c2f7d6}
+      \strng{authornamehash}{cb6c47b8514016726e35197230c2f7d6}
+      \strng{authorfullhash}{cb6c47b8514016726e35197230c2f7d6}
+      \field{sortinit}{J}
+      \field{sortinithash}{b2f54a9081ace9966a7cb9413811edb4}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Communications of the ACM}
+      \field{number}{9}
+      \field{title}{Alloy: a language and tool for exploring software designs}
+      \field{volume}{62}
+      \field{year}{2019}
+      \field{pages}{66\bibrangedash 76}
+      \range{pages}{11}
+    \endentry
+    \entry{moura2021lean}{inproceedings}{}
+      \name{author}{2}{}{%
+        {{hash=04ffe79f369bf9f16e299fcf4f98e780}{%
+           family={Moura},
+           familyi={M\bibinitperiod},
+           given={Leonardo\bibnamedelima de},
+           giveni={L\bibinitperiod\bibinitdelim d\bibinitperiod}}}%
+        {{hash=f0eef0e3dc5cf232456ab1f5460e2ef4}{%
+           family={Ullrich},
+           familyi={U\bibinitperiod},
+           given={Sebastian},
+           giveni={S\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Springer}%
+      }
+      \strng{namehash}{5c705fa7f3300303f20110861a4c6130}
+      \strng{fullhash}{5c705fa7f3300303f20110861a4c6130}
+      \strng{bibnamehash}{5c705fa7f3300303f20110861a4c6130}
+      \strng{authorbibnamehash}{5c705fa7f3300303f20110861a4c6130}
+      \strng{authornamehash}{5c705fa7f3300303f20110861a4c6130}
+      \strng{authorfullhash}{5c705fa7f3300303f20110861a4c6130}
+      \field{sortinit}{M}
+      \field{sortinithash}{4625c616857f13d17ce56f7d4f97d451}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{Automated Deduction--CADE 28: 28th International Conference on Automated Deduction, Virtual Event, July 12--15, 2021, Proceedings 28}
+      \field{title}{The lean 4 theorem prover and programming language}
+      \field{year}{2021}
+      \field{pages}{625\bibrangedash 635}
+      \range{pages}{11}
+    \endentry
+    \entry{nawrocki2023extensible}{inproceedings}{}
+      \name{author}{3}{}{%
+        {{hash=38aca48bcd165aa6d7ad69c49d76426d}{%
+           family={Nawrocki},
+           familyi={N\bibinitperiod},
+           given={Wojciech},
+           giveni={W\bibinitperiod}}}%
+        {{hash=9998806f96550e0092d2fe5cc064218d}{%
+           family={Ayers},
+           familyi={A\bibinitperiod},
+           given={Edward\bibnamedelima W},
+           giveni={E\bibinitperiod\bibinitdelim W\bibinitperiod}}}%
+        {{hash=abe46e2c0058031f8b74ad14ac663151}{%
+           family={Ebner},
+           familyi={E\bibinitperiod},
+           given={Gabriel},
+           giveni={G\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Schloss Dagstuhl-Leibniz-Zentrum für Informatik}%
+      }
+      \strng{namehash}{424dc91012fcd254b9612f97944b2002}
+      \strng{fullhash}{424dc91012fcd254b9612f97944b2002}
+      \strng{bibnamehash}{424dc91012fcd254b9612f97944b2002}
+      \strng{authorbibnamehash}{424dc91012fcd254b9612f97944b2002}
+      \strng{authornamehash}{424dc91012fcd254b9612f97944b2002}
+      \strng{authorfullhash}{424dc91012fcd254b9612f97944b2002}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{booktitle}{14th International Conference on Interactive Theorem Proving (ITP 2023)}
+      \field{title}{An extensible user interface for Lean 4}
+      \field{year}{2023}
+    \endentry
+    \entry{ngpdbccdlrrvwwk-oopsla-2024}{article}{}
+      \name{author}{15}{}{%
+        {{hash=e244106fe04f88ec834643bef86e921e}{%
+           family={Nelson},
+           familyi={N\bibinitperiod},
+           given={Tim},
+           giveni={T\bibinitperiod}}}%
+        {{hash=17d3df98d1ca42403ba8efb9ce06ee6b}{%
+           family={Greenman},
+           familyi={G\bibinitperiod},
+           given={Ben},
+           giveni={B\bibinitperiod}}}%
+        {{hash=a4918ceff4497dcdc7e46234bfe40fd3}{%
+           family={Prasad},
+           familyi={P\bibinitperiod},
+           given={Siddhartha},
+           giveni={S\bibinitperiod}}}%
+        {{hash=29b7c163ca79a5cf874b72ef98a3fb0d}{%
+           family={Dyer},
+           familyi={D\bibinitperiod},
+           given={Tristan},
+           giveni={T\bibinitperiod}}}%
+        {{hash=a37f37c3e085fda68746c8fd7f64ce5c}{%
+           family={Bove},
+           familyi={B\bibinitperiod},
+           given={Ethan},
+           giveni={E\bibinitperiod}}}%
+        {{hash=8ef1c5b9f07868a966a23228720d2582}{%
+           family={Chen},
+           familyi={C\bibinitperiod},
+           given={Qianfan},
+           giveni={Q\bibinitperiod}}}%
+        {{hash=8546a4f5ed0d8587a4231398b2dd8909}{%
+           family={Cutting},
+           familyi={C\bibinitperiod},
+           given={Charles},
+           giveni={C\bibinitperiod}}}%
+        {{hash=0c54fc1e38e33b19f389e0d1b737f7a9}{%
+           family={Vecchio},
+           familyi={V\bibinitperiod},
+           given={Thomas\bibnamedelima Del},
+           giveni={T\bibinitperiod\bibinitdelim D\bibinitperiod}}}%
+        {{hash=56cc6a50101f5f0ffd0a5f0731c5e1bc}{%
+           family={LeVine},
+           familyi={L\bibinitperiod},
+           given={Sidney},
+           giveni={S\bibinitperiod}}}%
+        {{hash=66553aff25395234ac015a39cd32026d}{%
+           family={Rudner},
+           familyi={R\bibinitperiod},
+           given={Julianne},
+           giveni={J\bibinitperiod}}}%
+        {{hash=ed1211d8b55d842f2e56315059efd586}{%
+           family={Ryjikov},
+           familyi={R\bibinitperiod},
+           given={Ben},
+           giveni={B\bibinitperiod}}}%
+        {{hash=eda49282006fa9b9cb2bdcb5c47a936e}{%
+           family={Varga},
+           familyi={V\bibinitperiod},
+           given={Alexander},
+           giveni={A\bibinitperiod}}}%
+        {{hash=04fab1774348c92c844ee3485254a010}{%
+           family={Wagner},
+           familyi={W\bibinitperiod},
+           given={Andrew},
+           giveni={A\bibinitperiod}}}%
+        {{hash=e9a8b28c833bf46d42f25bd832ee1d9e}{%
+           family={West},
+           familyi={W\bibinitperiod},
+           given={Luke},
+           giveni={L\bibinitperiod}}}%
+        {{hash=f7416298c547d841aa97cdf04c4564f7}{%
+           family={Krishnamurthi},
+           familyi={K\bibinitperiod},
+           given={Shriram},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{8feb8d2e0f1248e280732f364fa7994b}
+      \strng{fullhash}{0a27eb42f790849d97f8a09326203062}
+      \strng{bibnamehash}{8feb8d2e0f1248e280732f364fa7994b}
+      \strng{authorbibnamehash}{8feb8d2e0f1248e280732f364fa7994b}
+      \strng{authornamehash}{8feb8d2e0f1248e280732f364fa7994b}
+      \strng{authorfullhash}{0a27eb42f790849d97f8a09326203062}
+      \field{sortinit}{N}
+      \field{sortinithash}{22369a73d5f88983a108b63f07f37084}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Proceedings of the ACM on Programming Languages}
+      \field{number}{{OOPSLA1}}
+      \field{title}{{Forge}: A Tool and Language for Teaching Formal Methods}
+      \field{volume}{8}
+      \field{year}{2024}
+      \field{pages}{1\bibrangedash 31}
+      \range{pages}{31}
+    \endentry
+    \entry{metaprogramming}{book}{}
+      \name{author}{8}{}{%
+        {{hash=8a5691d3e44ebf700644628c0b4334a3}{%
+           family={Paulino},
+           familyi={P\bibinitperiod},
+           given={Arthur},
+           giveni={A\bibinitperiod}}}%
+        {{hash=92d9af69eb53e30639032d213e88485b}{%
+           family={Testa},
+           familyi={T\bibinitperiod},
+           given={Damiano},
+           giveni={D\bibinitperiod}}}%
+        {{hash=3563dfa2e9d852106942c21658d81017}{%
+           family={Ayers},
+           familyi={A\bibinitperiod},
+           given={Edwards},
+           giveni={E\bibinitperiod}}}%
+        {{hash=86fa8e6fdaad0c5fb38959420051e764}{%
+           family={Karunus},
+           familyi={K\bibinitperiod},
+           given={Evgenia},
+           giveni={E\bibinitperiod}}}%
+        {{hash=93a20383f67bd4eefa6735f966beca9c}{%
+           family={Böving},
+           familyi={B\bibinitperiod},
+           given={Henrik},
+           giveni={H\bibinitperiod}}}%
+        {{hash=19fc79e28fa98ba1ef2fe3066ac83533}{%
+           family={Limperg},
+           familyi={L\bibinitperiod},
+           given={Jannis},
+           giveni={J\bibinitperiod}}}%
+        {{hash=28bd67bd697f56419dea89bdb49d225a}{%
+           family={Gadgil},
+           familyi={G\bibinitperiod},
+           given={Siddhartha},
+           giveni={S\bibinitperiod}}}%
+        {{hash=ff9b61df03afa8bdceb54648ee82e620}{%
+           family={Bhat},
+           familyi={B\bibinitperiod},
+           given={Siddharth},
+           giveni={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{ef06ed6140264c68792c1126212f7364}
+      \strng{fullhash}{61d2b9a4854becda06b746ff0819542f}
+      \strng{bibnamehash}{ef06ed6140264c68792c1126212f7364}
+      \strng{authorbibnamehash}{ef06ed6140264c68792c1126212f7364}
+      \strng{authornamehash}{ef06ed6140264c68792c1126212f7364}
+      \strng{authorfullhash}{61d2b9a4854becda06b746ff0819542f}
+      \field{sortinit}{P}
+      \field{sortinithash}{ff3bcf24f47321b42cb156c2cc8a8422}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Metaprogramming in Lean 4}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://leanprover-community.github.io/lean4-metaprogramming-book/
+      \endverb
+      \verb{url}
+      \verb https://leanprover-community.github.io/lean4-metaprogramming-book/
+      \endverb
+    \endentry
+    \entry{russell2009philosophy}{book}{}
+      \name{author}{1}{}{%
+        {{hash=c58c42b6f7e7e1f78dbbdc65ed8e5384}{%
+           family={Russell},
+           familyi={R\bibinitperiod},
+           given={Bertrand},
+           giveni={B\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Routledge}%
+      }
+      \strng{namehash}{c58c42b6f7e7e1f78dbbdc65ed8e5384}
+      \strng{fullhash}{c58c42b6f7e7e1f78dbbdc65ed8e5384}
+      \strng{bibnamehash}{c58c42b6f7e7e1f78dbbdc65ed8e5384}
+      \strng{authorbibnamehash}{c58c42b6f7e7e1f78dbbdc65ed8e5384}
+      \strng{authornamehash}{c58c42b6f7e7e1f78dbbdc65ed8e5384}
+      \strng{authorfullhash}{c58c42b6f7e7e1f78dbbdc65ed8e5384}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{The philosophy of logical atomism}
+      \field{year}{2009}
+    \endentry
+    \entry{ullrich2022beyond}{article}{}
+      \name{author}{2}{}{%
+        {{hash=f0eef0e3dc5cf232456ab1f5460e2ef4}{%
+           family={Ullrich},
+           familyi={U\bibinitperiod},
+           given={Sebastian},
+           giveni={S\bibinitperiod}}}%
+        {{hash=6f56e279fa3378e39f74c27d62149c2c}{%
+           family={De\bibnamedelima Moura},
+           familyi={D\bibinitperiod\bibinitdelim M\bibinitperiod},
+           given={Leonardo},
+           giveni={L\bibinitperiod}}}%
+      }
+      \list{publisher}{1}{%
+        {Episciences. org}%
+      }
+      \strng{namehash}{7ce8adf6dd317e0bdeb023a4477d7702}
+      \strng{fullhash}{7ce8adf6dd317e0bdeb023a4477d7702}
+      \strng{bibnamehash}{7ce8adf6dd317e0bdeb023a4477d7702}
+      \strng{authorbibnamehash}{7ce8adf6dd317e0bdeb023a4477d7702}
+      \strng{authornamehash}{7ce8adf6dd317e0bdeb023a4477d7702}
+      \strng{authorfullhash}{7ce8adf6dd317e0bdeb023a4477d7702}
+      \field{sortinit}{U}
+      \field{sortinithash}{6901a00e45705986ee5e7ca9fd39adca}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Logical Methods in Computer Science}
+      \field{title}{Beyond notations: Hygienic macro expansion for theorem proving languages}
+      \field{volume}{18}
+      \field{year}{2022}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

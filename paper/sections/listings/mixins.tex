@@ -1,0 +1,39 @@
+% !TEX root = ../../paper.tex
+
+{
+\setlength{\fboxsep}{4pt}
+\begin{tcolorbox}[listing only, minted style=autumn, colback=forgelistingcolor, enhanced, frame hidden, top=0pt, bottom=0pt, left=0pt, right=0pt]
+\vspace{-0.5em}
+\begin{minted}[bgcolor=leanlistingcolor,linenos,frame=none,firstnumber=1]{lean}
+import Lforge
+\end{minted}
+\vspace{-3.7em}
+\begin{minted}[bgcolor=forgelistingcolor,linenos,frame=none,firstnumber=2]{alloy}
+
+abstract sig Location {}
+one sig Uninterested, Waiting, InCS extends Location {}
+
+sig Process {}
+
+sig State {
+  loc: func Process -> Location,
+  flags: set Process
+}
+
+\end{minted}
+\vspace{-3.7em}
+\begin{minted}[bgcolor=leanlistingcolor,linenos,frame=none,firstnumber=13]{lean}
+def flags_good (s : State) :=
+  ∀ (p : Process), loc s p = InCS ∨ loc s p = Waiting → flags s p
+\end{minted}
+\vspace{-3.7em}
+\begin{minted}[bgcolor=forgelistingcolor,linenos,frame=none,firstnumber=15]{alloy}
+
+pred good[s: State] {
+  flags_good[s]
+  lone {p: Process | s.loc[p] = InCS}
+}
+\end{minted}
+\vspace{-2em}
+\end{tcolorbox}
+}

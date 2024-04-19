@@ -2,15 +2,15 @@
 \section{Results and Examples}
 
 \subsection{Forge as a Lean DSL}\label{sec:dsl}
-One of the crucial benefits of working with Lean 4 as a metaprogramming language and a target for our translation is the rich support for DSL implementation and integration. Lean and its accompanying Language Server Protocol (LSP)\footnote{This is the language server that processes Lean code and communicates with the code editor or integrated development environment. In this case, we use VS Code.} are designed to have highly flexible and extensiblie user interfaces that expose useful APIs for implementers of DSLs and custom UI to utilize \cite{moura2021lean, nawrocki2023extensible}. Furthermore, Lean's extensible syntax and macro system are simple yet remarkably powerful \cite{ullrich2022beyond, metaprogramming}. 
+One of the crucial benefits of working with Lean 4 as a metaprogramming language and a target for our translation is the rich support for DSL implementation and integration. Lean and its accompanying Language Server Protocol (LSP)\footnote{This is the language server that processes Lean code and communicates with the code editor or integrated development environment. In this case, we use VS Code.} are designed to have highly flexible and extensible user interfaces that expose useful APIs for implementers of DSLs and custom UI to utilize \cite{moura2021lean, nawrocki2023extensible}. Furthermore, Lean's extensible syntax and macro system are simple yet remarkably powerful \cite{ullrich2022beyond, metaprogramming}. 
 
-It is as such that we justify framing our implementation of Forge in Lean as an honest-to-goodness domain-specific language (DSL). We do not treat user-experience of our tool as an afterthought, nor do we skimp over ensuring that LForge has a set of developer aids just as capable as those found in Forge or Lean themselves. As mentioned in \cref{sec:design-summary}, the fact that we are able to interact with Lean's own implementation means that many of Lean's `IDE-like' features are exposed to us and available for us to use in the Forge DSL without much overhead. 
+It is as such that we justify framing our implementation of Forge in Lean as an honest-to-goodness domain-specific language (DSL). We do not treat user experience of our tool as an afterthought, nor do we skimp over ensuring that LForge has a set of developer aids just as capable as those found in Forge or Lean themselves. As mentioned in \cref{sec:design-summary}, the fact that we can interact with Lean's implementation means that many of Lean's `IDE-like' features are exposed to us and available for us to use in the Forge DSL without much overhead. 
 
 The following are some (non-exhaustive) examples of the user experience and interface of Forge within Lean. 
 
 \subsubsection{Syntax Highlighting}
 
-Superficially, by virtue of defining our syntax as Lean objects and isolating our keywords (we piggyback off Lean's lexer), we get syntax highlighting of Forge code `for free', on par with Forge's native solutions. In \cref{fig:sc-highlighting-hover}, the syntax of a Forge specification is highlighted. 
+Superficially, by defining our syntax as Lean objects and isolating our keywords (we piggyback off Lean's lexer), we get syntax highlighting of Forge code `for free', on par with Forge's native solutions. In \cref{fig:sc-highlighting-hover}, the syntax of a Forge specification is color-coded. 
 
 \subsubsection{Types on Hover}
 
@@ -18,7 +18,7 @@ Lean exposes an \texttt{addTermInfo'} method that allows us to attach declared n
 
 \begin{figure}
   \centering
-  \fbox{\includegraphics[width=0.6\textwidth,trim={0 0 2cm 0},clip]{images/screenshots/hover-tooltip.png}}
+  \fbox{\includegraphics[width=0.5\textwidth,trim={0 0 0 0},clip]{images/screenshots/hover-tooltip.png}}
   \caption{Tooltips containing type information are available on hover. Forge syntax is automatically highlighted without any extra work.}
   \label{fig:sc-highlighting-hover}
 \end{figure}
@@ -28,7 +28,7 @@ Lean exposes an \texttt{addTermInfo'} method that allows us to attach declared n
     \fbox{\includegraphics[width=0.7\textwidth,trim={0 0 0 0},clip]{images/screenshots/documentation.png}}
   \end{center}
   \begin{center}
-    \centering\fbox{\includegraphics[width=0.7\textwidth,trim={0 0 4cm 0},clip]{images/screenshots/documentation-fields.png}}
+    \centering\fbox{\includegraphics[width=0.7\textwidth,trim={0 0 0 0},clip]{images/screenshots/documentation-fields.png}}
   \end{center}
   \caption{We can define our syntax definitions to print with custom documentation text for users new to using Forge syntax. }
   \label{fig:sc-docstrings}
@@ -36,34 +36,34 @@ Lean exposes an \texttt{addTermInfo'} method that allows us to attach declared n
 
 \subsubsection{Documentation}
 
-As a pedagogical language, Forge has a focus on usability, learnability, and helpful feedback \cite{ngpdbccdlrrvwwk-oopsla-2024}, especially when its parent language Alloy is far more permissive with errors. We follow in the same vein in reporting errors and missing features, and in addition we include documentation on Forge's syntax within Forge's on-hover features. 
+As a pedagogical language, Forge has a focus on usability, learnability, and helpful feedback \cite{ngpdbccdlrrvwwk-oopsla-2024}, especially when its parent language Alloy is far more permissive with errors. We follow in the same vein in reporting errors and missing features, and in addition, we include documentation on Forge's syntax within Forge's on-hover features. 
 
-Forge documentation is included via docstrings that are inline with our syntax objects (see \cref{sec:parsing}), which is automatically included by Lean's LSP to display on the frontend. \Cref{fig:sc-docstrings} showcases docstrings of varying verbosity for operators as well as declaration syntax. 
+Forge documentation is included via docstrings that are placed inline with our syntax objects (see \cref{sec:parsing}), which is automatically included by Lean's LSP to display on the front end. \Cref{fig:sc-docstrings} showcases docstrings of varying verbosity for operators as well as declaration syntax. 
 
-Additionally, we need to be clear and verbose about language features that are not supported in \textsc{Lforge}. Since \textsc{Lforge} includes a subset of relational Forge determined by compatibility with Lean's semantics, we prompts users attempting to use unsupported language features with clarification and a request to redefine their statements. \Cref{fig:sc-unsupported} showcases an example of a prompt that \texttt{lone} sig quantifier is unsupported and potentially ambiguous. 
+Additionally, we need to be clear and verbose about language features that are not supported in \textsc{Lforge}. Since \textsc{Lforge} includes a subset of relational Forge determined by compatibility with Lean's semantics, we prompt users attempting to use unsupported language features with clarification and a request to redefine their statements. \Cref{fig:sc-unsupported} showcases an example of a prompt that \texttt{lone} sig quantifier is unsupported and potentially ambiguous. 
 
 \subsubsection{Error Checking}
 
-Compared to Forge or Racket, Lean (and consequently, \textsc{Lforge}) provides a markedly better experience with error messages and prompting users when there are errors present in their source program. Since Lean runs in the background as a LSP, users immediately get the immediate feedback whether their source code parses and `compiles'.\footnote{Forge translations in Lean are not really executable, so they provide their value in being interactive with the proof system.}
+Compared to Forge or Racket, Lean (and consequently, \textsc{Lforge}) provides a markedly better experience with error messages and prompting users when there are errors present in their source program. Since Lean runs in the background as an LSP, users immediately get immediate feedback on whether their source code parses and `compiles'.\footnote{Forge translations in Lean are not executable, so they provide their value in being interactive with the proof system.}
 
 Lean's error locality system allows its error monad to refer to any piece of syntax object to potentially throw an error. This allows us to prompt errors as soon and as granular as possible. \Cref{fig:sc-type-mismatch} illustrates error reporting at the level of specific identifiers. 
 
 \begin{figure}[h!]
   \centering
   \fbox{\includegraphics[width=0.7\textwidth,trim={0 0 6cm 0},clip]{images/screenshots/custom-errors.png}}
-  \caption{We can define custom error messages with our implementation to prompt users to change their specification if a piece of syntax is ambiguous or not supported.}
+  \caption{We can define custom error messages with our implementation to prompt users to change their specifications if a piece of syntax is ambiguous or not supported.}
   \label{fig:sc-unsupported}
 \end{figure}
 
 \subsubsection{Types}
 
-Lean's dependent type system is both a blessing and a curse when it comes to the task of translating a language with a foreign type system into Lean. While the type system is a highly-optimized algorithm that attempts to resolve type coercions, type classes, and reductions \cite{de2015lean}, it at often delicate and temperamental, especially when we are working at such a low level of emitting Lean \texttt{expr}s, which happens \emph{after} type unification (see \cref{sec:elaboration}). We discuss some of the downsides of such a strict type system in \cref{sec:type-coercions}, and introduced \textsc{Lforge} features that circumvent Lean's restrictions and play into Lean's type system. 
+Lean's dependent type system is both a blessing and a curse when it comes to the task of translating a language with a foreign type system into Lean. While the type system is a highly optimized algorithm that attempts to resolve type coercions, type classes, and reductions \cite{de2015lean}, it at often delicate and temperamental, especially when we are working at such a low level of emitting Lean \texttt{expr}s, which happens \emph{after} type unification (see \cref{sec:elaboration}). We discuss some of the downsides of such a strict type system in \cref{sec:type-coercions}, and introduced \textsc{Lforge} features that circumvent Lean's restrictions and play into Lean's type system. 
 
-Here, we discuss some of the merits of implementing a DSL designed around Lean's extensive type system. One of the side effects of translating Forge into Lean is that we inherit Lean's powerful type unification and checking system. This allows us, at specification-time, to check for type-errors within the specification. Alloy, on the other hand, is purposefully untyped \cite{jackson2019alloy} and only reports type errors at runtime when the successful evaluation of expressions results in the empty expression \cite{edwards2004type}. This proves difficult to debug and unwieldly for users to understand, as \cite{ngpdbccdlrrvwwk-oopsla-2024} observes. For students who are newly learning the idea of relations, sets, and units, lacking instantaneous feedback on the validity of types and expressions is immensely useful. 
+Here, we discuss some of the merits of implementing a DSL designed around Lean's extensive type system. One of the side effects of translating Forge into Lean is that we inherit Lean's powerful type unification and checking system. This allows us, at specification-time, to check for type errors within the specification. Alloy, on the other hand, is purposefully untyped \cite{jackson2019alloy} and only reports type errors at runtime when the successful evaluation of expressions results in the empty expression \cite{edwards2004type}. This proves difficult to debug and unwieldy for users to understand, as \cite{ngpdbccdlrrvwwk-oopsla-2024} observes. For students who are newly learning the idea of relations, sets, and units, lacking instantaneous feedback on the validity of types and expressions is immensely useful. 
 
-Since expressions in our Forge DSL need to translate to typed terms in Lean, we necessarily have to specify types (or use Lean metavariables awaiting unification in place of types) to the Lean expressions emitted. Fortunately, much of this process is abstracted away by the type inference system in place in Lean. For example, to make an application, say, a set union, we don't need to specify the type of set that are being used in the operands and \texttt{mkAppM} will complete that for us. However, if we specified two sets of different types, Lean would raise an error. This results in a type checking and inference system that is as powerful as Lean's with minimal overhead. 
+Since expressions in our Forge DSL need to translate to typed terms in Lean, we necessarily have to specify types (or use Lean metavariables awaiting unification in place of types) to the Lean expressions emitted. Fortunately, much of this process is abstracted away by the type inference system in place in Lean. For example, to make an application, say, a set union, we don't need to specify the type of set that are being used in the operands and \texttt{mkAppM} will complete that for us. However, if we specified two sets of different types, Lean would raise an error. This results in a type-checking and inference system that is as powerful as Lean's with minimal overhead. 
 
-Since the Lean LSP provides type linting, our Forge DSL inherits this feature as well. In \cref{fig:sc-type-mismatch}, we pass the \texttt{Board} and \texttt{Player} arguments to \texttt{winRow} in the wrong order, which causes a type error. Lean is able to identify that the first input to \texttt{winRow}, \texttt{p}, has the wrong type and display an appropriate error message. 
+Since the Lean LSP provides type linting, our Forge DSL inherits this feature as well. In \cref{fig:sc-type-mismatch}, we pass the \texttt{Board} and \texttt{Player} arguments to \texttt{winRow} in the wrong order, which causes a type error. Lean can identify that the first input to \texttt{winRow}, \texttt{p}, has the wrong type and displays an appropriate error message. 
 
 \begin{figure}[h!]
   \centering
@@ -72,26 +72,36 @@ Since the Lean LSP provides type linting, our Forge DSL inherits this feature as
   \label{fig:sc-type-mismatch}
 \end{figure}
 
-\subsubsection{Mix-ins}
+\subsubsection{Mixed Execution}
 
-\todo{complete}
+Our embedding of Forge within Lean, especially our choice to map Forge structures (sigs, fields, predicates) to corresponding Lean concepts (types, relations, functions) as faithfully as possible means that a Lean file with Forge specifications supports mixed execution, an embedding model explored and supported by similar tools that merge the Alloy specification into other imperative programming languages \cite{milicevic2010executable,milicevic2014alpha,milicevic2015advancing}. 
+
+All Forge specifications, once inserted into a Lean file, will generate appropriate definitions directly into the Lean environment. Using Lean syntax, we can further interact with these definitions from Forge, perhaps writing predicates or definitions that build on these. This interaction goes the opposite way as well: where Forge expects an expression, predicate, or function, declarations from Lean can be used seamlessly. This provides a frictionless user experience and allows the user to add additional constraints and rules, written in Lean, to a preexisting Forge model. Furthermore, this alleviates the tension incurred of creating the perfect translation: we are aware of the fact that only a subset of Forge is implemented due to the technical restrictions of both platforms. However, with appropriate error reporting (see above Error Checking), users can be prompted to extend their Forge specifications with additional Lean rules. Mixed execution of Forge and Lean means that Forge specifications are now extensible using a much broader functional programming language. 
+
+The following is an example of mixed execution of Forge and Lean using \textsc{Lforge}. The full specification of this example, a model for mutual exclusion of processes, is discussed in \cref{sec:mutex}. 
+
+\input{sections/listings/mixins.tex}
+
+While the majority of this specification is in Forge, we are working in Lean using \textsc{Lforge} (line 1). We define relevant sigs and fields as a Forge specification. On lines 13-14, we use the types defined in Forge to write a predicate in Lean that states that all processes waiting or in a critical state have a flag raised. In line 17, we've switched back to specifying in Forge but can continue to utilize the \texttt{flags\_good} predicates we wrote above in Lean. There are no walls or abstractions between the two languages, and Forge is indeed a first-class citizen in the Lean environment. 
+
+Since this interoperability works across imports and modules, we envision projects where sections of specifications can be written in Forge and other relevant sections in Lean, allowing users to interoperate between the two. This could also introduce possibilities for users accustomed to the two distinct languages or formalization techniques to collaborate on a shared specification. 
 
 \subsection{A Toy Example, \emph{Continued}}\label{sec:toy-example-continued}
 
-We revisit our toy example from \cref{sec:toy-example} (the barber who ``shaves all those, and only those, who do not shave themselves''). Recall that we had introduced a Forge specification for this problem, as well as an equivalent Lean specification of the paradox. We concluded earlier that while it was insightful for Forge to produce a result that this specification was \texttt{Unsatisfiable}, we might still desire for a general proof of this fact outside of Forge's finite and restricted search bounds. 
+We revisit our toy example from \cref{sec:toy-example} (the barber who ``shaves all those, and only those, who do not shave themselves''). Recall that we had introduced a Forge specification for this problem, as well as an equivalent Lean specification of the paradox. We concluded earlier that while it was insightful for Forge to produce a result that this specification was \texttt{Unsatisfiable}, we might still desire a general proof of this fact outside of Forge's finite and restricted search bounds. 
 
 Here's an example of what the last part of the modeling workflow---writing and completing the proof---would look like in Lean's interactive tactic mode: 
 
 \begin{figure}[h!]
   \centering
   \fbox{\includegraphics[width=\textwidth-1pt,trim={0 0 0 0},clip]{images/screenshots/barber-proof.png}}
-  \caption{The proof of nonexistence of a barber in the barber paradox, in Lean. The interactive proof state is on the right with the proof source on the left. }
+  \caption{The proof of the nonexistence of a barber in the barber paradox, in Lean. The interactive proof state is on the right with the proof source on the left. }
   \label{fig:barber-proof}
 \end{figure}
 
-On line 25, we use the \texttt{simp} tactic (or alternatively, we can also use \texttt{simp only} or \texttt{rw}) to rewrite our Forge-defined predicates \texttt{existsBarber} and \texttt{shavesThemselves}. Due to the simplicity of the example, the goal can be closed using the \texttt{tauto} (tautology) tactic which repeatedly breaks down assumptions and splits goals with with logical connectives until it can close the goal. 
+On line 25, we use the \texttt{simp} tactic (or we can also use \texttt{simp only} or \texttt{rw}) to rewrite our Forge-defined predicates \texttt{existsBarber} and \texttt{shavesThemselves}. Due to the simplicity of the example, the goal can be closed using the \texttt{tauto} (tautology) tactic which repeatedly breaks down assumptions and splits goals with with logical connectives until it can close the goal. Full tactic states at each step of this proof are provided in \cref{appendix:barber-proof}. 
 
-While simple, this example demonstrates the expressiveness of Forge programs embedded in Lean, and the relative ease with which some proofs of translated properties can be executed. The following section, \cref{sec:mutex}, presents a more elaborative example of \textsc{Lforge}.
+While simple, this example demonstrates the expressiveness of Forge programs embedded in Lean and the relative ease with which some proofs of translated properties can be executed. The following section, \cref{sec:mutex}, presents a more elaborative example of \textsc{Lforge}.
 
 \subsection{A Mutual-Exclusion Protocol}\label{sec:mutex}
 

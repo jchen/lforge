@@ -1,7 +1,11 @@
 % !TEX root = ../paper.tex
 \section{Motivation}
 
-\todo{complete}
+As discussed in \cref{sec:bg-forge} and \cref{sec:bg-related}, there is a desire for more functionality out of specification languages like Alloy and Forge for them to be more usable and widely applicable in the real world. 
+
+There is a want for something beyond model-finding capabilities from tools like Alloy and Forge \cite{milicevic2014alpha}. By adding the deductive `power' of interactive theorem prover to Forge, we open up possibilities of using Forge for types of analyses not previously possible. 
+
+Furthermore, one of the pain points is that Forge is constricted to checking small examples and models---Forge scales poorly with large models which makes complex problems difficult to model and analyze \cite{lzhu-honorsthesis}. By embedding Forge within Lean, we can break Forge specifications free of the bounds imposed by the SAT solver backend and instead utilize Lean's size-nostalgic logical framework for proofs of model properties. 
 
 \subsection{A Toy Example}\label{sec:toy-example}
 

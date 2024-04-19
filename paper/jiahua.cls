@@ -401,6 +401,8 @@
 \setuptodonotes{color=green!20}
 \RequirePackage{cancel}
 \usetikzlibrary{cd}
+\usetikzlibrary{arrows.meta, calc, chains, positioning, quotes, shapes.multipart}
+\newcommand\ppbb{path picture bounding box}
 \numberwithin{equation}{section}
 
 \setmonofont[
@@ -521,6 +523,7 @@
 \RequirePackage[all]{nowidow}
 
 \RequirePackage{caption}
+\captionsetup[table]{labelsep=space}
 \captionsetup[figure]{labelsep=space}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% macros %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

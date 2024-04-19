@@ -1,0 +1,38 @@
+% !TEX root = ../../paper.tex
+
+% Source: https://tex.stackexchange.com/questions/376397/create-a-flowchart-style-figure
+
+\begin{tikzpicture}[
+    node distance = 3mm and 12mm,
+      start chain = going right,
+      NTRC/.style = {% Node with Two Rounded Corners
+        inner sep=1mm, text width=25mm, minimum height=11mm,
+        align=center,
+        font=\footnotesize\sffamily\bfseries\linespread{.7}, on chain,
+        join=by LA,
+        path picture={%
+        \draw[semithick, rounded corners=3pt];
+                    }%end of path picture
+                    },
+        L/.style = {% for Labels
+        font=\scriptsize\sffamily, align=center
+                    },
+        LA/.style = {% Line with Arrowhead for join macro
+        draw=lightgray, semithick, -Stealth
+                    },
+        LB/.style = {% Line with Bar head
+            draw=lightgray,
+            {Bar[width=2mm]}-{Bar[width=2mm]},
+            shorten >=-0.5\pgflinewidth, shorten <=-0.5\pgflinewidth,
+                    },
+    every label/.append style = {L},]
+    \node (n1) [NTRC,label={\texttt{\tiny TSyntax `f_program}},fill=forgelistingcolor,rounded corners=3pt] {Forge Syntax};
+    \node (n2) [NTRC,label={\texttt{\tiny ForgeModel}},fill=leanimpllistingcolor,rounded corners=3pt] {Forge AST};
+    \node (n3) [NTRC,label={\texttt{\tiny Expr}},fill=leanimpllistingcolor,rounded corners=3pt] {Lean AST};
+    \node (n4) [NTRC,label={Lean Environment},fill=leanlistingcolor,rounded corners=3pt] {Lean\\[-3pt] Kernel / LSP} ;
+    \path (n1) to [L,"Parsing"] (n2);
+    \path (n2) to [L,"Elab"] (n3);
+    \path (n3) to [L,"Eval"] (n4);
+    % \draw[LA] (n4) to [L,"Decoded\\ Output"] node (m4);
+    \end{tikzpicture}
+    

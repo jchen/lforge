@@ -40,6 +40,8 @@ _minted-paper
 *.bcf
 *.run.xml
 *.bbl-SAVE-ERROR
+*.bcf-SAVE-ERROR
+*-SAVE-ERROR
 
 # Install fonts, these are from Adobe Fonts :( [licensed]
 fonts/SolitaireMVBPro*

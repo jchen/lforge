@@ -112,7 +112,7 @@ we can then use Lean's native subtyping to define our \texttt{Undergrad} type:
 \end{lean*}
 In this implementation, we also happen to get the \texttt{Undergrad} to \texttt{Student} coercion automatically as a property of subtyping.
 
-In addition, Forge introduces the concept of \emph{abstract} sigs \cite{jackson2012software}. If \texttt{Student} were an abstract sig, we might encounter \texttt{Undergrad} and \texttt{Grad} student as concrete subtypes of \texttt{abstract Student}. We might encounter:
+In addition, Forge introduces the concept of \emph{abstract} sigs \cite{jackson2012software}. If \texttt{Student} were an abstract sig, we might encounter \texttt{Undergrad} and \texttt{Grad} student as concrete subtypes of \texttt{abstract Student}, like:
 \begin{forge*}
 abstract sig Student {}
 sig Undergrad extends Student {}
@@ -124,13 +124,21 @@ axiom abstract_student : ∀ s : Student, IsUndergrad s ∨ IsGrad s
 \end{lean*}
 provided both subtype instances for \texttt{Undergrad} and \texttt{Grad} have been generated correctly. 
 
-\todo{Write more about types of things here perhaps, separate out into processing for `one' and what not.}
+To inform Lean that our subtypes are distinct and unique, for each pair of subtypes, we generate an axiom with the \texttt{simp} modifier that states each subclass is disjoint: 
+\begin{lean*}
+@[reducible,simp] axiom disjoint_Student_IsUndergrad_IsGrad : 
+  ∀ s : Student, ¬ (IsUndergrad s ∧ IsGrad s)
+\end{lean*}  
+
+If furthermore, \texttt{Undergrad} and \texttt{Grad} are \texttt{one} sigs, they are not generated as subtypes but instead are generated as opaque elements of \texttt{Student}, with their membership predicates being defined as equality: 
+\begin{lean*}
+opaque Undergrad : Student
+def IsUndergrad (s : Student) := (Undergrad = .)
+\end{lean*}
 
 Such an analysis and translation of inheritance requires a global processing of the Forge program in Lean, since every expression emitted by our elaborator ought to have well-defined types and terms (that is, cannot be waiting on a term to be defined). Since Forge fields can depend on any sig, we need to `lift' sigs to define first before all fields and predicates can be defined. Furthermore, sig quantifiers and inheritance structures require preprocessing all sigs to generate a topological sort of the inheritance structure before expressing any of their translations in Lean. Since Forge is not a `local' language and all sig declarations are lifted, this was not a problem for us before we entered Lean. As such, sigs can be specified in any order in Forge. 
 
 For the remaining of sig quantifiers like \texttt{one} and \texttt{lone}, because of their complex interactions with inheritance (a \texttt{one} sig means that there is only one inhabited member of that sig that \emph{is not} any child sig, contrary to our intuition as to what a \texttt{one} or \texttt{lone} sig should be), our program prompts the user to write a customized axiom in Lean expressing their desired constraint. Note that this utilizes the seamless integration of Forge into Lean that makes such a solution of mixed execution possible. Anecdotally, \texttt{one} and \texttt{lone} sigs only apply to child sigs and the \texttt{abstract} quantification is only used on parent sigs (it doesn't make sense for a non-inherited sig to be \texttt{abstract}), so we expect that manual handling of sig quantifications to be an edge case. 
-
-\todo{Discuss axioms that have that all subtypes are disjoint.}
 
 \subsection{``Everything is a Set''}\label{sec:everything-is-a-set}
 \subsubsection{Overloaded operations}
@@ -138,7 +146,6 @@ The predominantly relational nature of Forge introduces another point of frictio
 
 This everything-is-a-set approach of Forge allows the following expression (within the existential quantifier), translated ``there is some \texttt{Student} who is their own friend'': 
 
-\newpage
 \vspace{0.5em}
 \noindent\begin{minipage}{0.5\textwidth}
 \begin{forge*}
@@ -203,6 +210,7 @@ s.friends
 \vspace{0.5em}\newline
 which is immediately more cumbersome than our earlier solution. 
 
+\newpage
 The same applies when we now try to implement the inclusion \texttt{in} operator: 
 
 \vspace{0.5em}
@@ -262,7 +270,7 @@ instance [f: Fintype α] : CoeDep Type (α : Type) (Set α) where
 \end{leanimpl*}
 
 \subsection{Typing \& Type Coercions}\label{sec:type-coercions}
-\todo{complete!}
+\todo{TODO}
 {\color{OliveGreen}
 \begin{itemize}
   \item Discuss the different ways of representing a type in \textsc{Lforge}.
@@ -281,8 +289,6 @@ We need to take special care when implementing expression operators in Lean when
 We discuss (2) extensively in \cref{sec:everything-is-a-set}, and introduce using Lean's type class system to implement varying translations of a method depending on the input types. There are several other Forge operations that require this treatment: membership, join (introduced above), cross, and equality. 
 
 The specific operators that we needed to take special care translating, the different types that they permit, and their translations in Lean are detailed below in \cref{tab:forge-operators}. 
-
-\todo{Custom syntax for the binary operations to pretty print}
 
 \begin{table}[h!]
 \centering
@@ -311,6 +317,12 @@ Cross: \texttt{a->b}                & \texttt{a->b}   & \texttt{(a, b)}         
 \caption{Forge binary operators and corresponding implementations based on operand types.}
 \label{tab:forge-operators}
 \end{table}
+
+When we do specify special Forge operators, we additionally specify custom infix operators for our operations to pretty-print in the Lean infoview window (see \cref{fig:mutex-proof} for an example): 
+\begin{leanimpl*}
+infix:50 ?\texttt{\textquotedbl }$\bowtie$\texttt{ \textquotedbl}?  => HJoin.join
+\end{leanimpl*}
+so translated statements look like $\texttt{a}\bowtie\texttt{b}$ instead of \texttt{Forge.HJoin.join a b}. 
 
 \subsection{Integers}\label{sec:integers}
 Forge and Alloy come with a unique integer model---due to the fact that models are compiled down to boolean constraints to be solved by a SAT solver, integers are severely limited in their bitwidth \cite{jackson2012software,nelson2024artifact}. The default bitwidth on integers in Forge is $4$, which gives us a grand total of $16$ integers. 

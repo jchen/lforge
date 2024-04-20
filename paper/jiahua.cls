@@ -461,11 +461,11 @@
 
 \newtcblisting{leanimpl}{listing only, minted language=lean, minted style=autumn,
     colback=leanimpllistingcolor, enhanced, frame hidden, top=4pt, bottom=4pt, left=4pt, right=4pt, breakable, 
-    minted options={fontsize=\footnotesize, tabsize=2, breaklines, autogobble, linenos}}
+    minted options={fontsize=\footnotesize, tabsize=2, breaklines, autogobble, linenos, escapeinside=??, texcomments}}
 
 \newtcblisting{leanimpl*}{listing only, minted language=lean, minted style=autumn,
     colback=leanimpllistingcolor, enhanced, frame hidden, top=4pt, bottom=4pt, left=4pt, right=4pt, breakable, 
-    minted options={fontsize=\footnotesize, tabsize=2, breaklines, autogobble}}
+    minted options={fontsize=\footnotesize, tabsize=2, breaklines, autogobble, escapeinside=??, texcomments}}
 
 \newtcblisting{lean}{listing only, minted language=lean, minted style=autumn,
     colback=leanlistingcolor, enhanced, frame hidden, top=4pt, bottom=4pt, left=4pt, right=4pt, breakable, 

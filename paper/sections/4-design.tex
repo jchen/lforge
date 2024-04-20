@@ -11,7 +11,7 @@ The Lean 4 compilation process is structured as in \cref{fig:lean-compilation}.
 \label{fig:lean-compilation}
 \end{figure}
 
-Specifically, the parsing and elaboration steps are designed to be highly customizable and are provided as a `first-class' feature of Lean 4. We approach the problem of translating Forge into Lean as a task of adding new language features to Lean itself. We define our own Lean syntax objects that correspond to a concrete syntax tree (CST) of Forge and implement a parser for Forge (see \cref{sec:parsing}), and then implement a custom elaboration function for our Forge syntax to translate it into native Lean expressions (see \cref{sec:elaboration}). \textsc{Lforge}'s translation process is overviewed in \cref{fig:lforge-process}. 
+Specifically, the parsing and elaboration steps are designed to be highly customizable and are provided as a `first-class' feature of Lean 4. We approach the problem of translating Forge into Lean as a task of adding new language features to Lean itself. We define our own Lean syntax objects that correspond to a concrete syntax tree (CST) of Forge and implement a parser for Forge (see \cref{sec:parsing}), and then implement a custom elaboration function for our Forge syntax to translate it into native Lean expressions (see \cref{sec:elaboration}). \textsc{Lforge}'s translation process, which is tightly integrated into the Lean compilation process, is outlined in \cref{fig:lforge-process}. 
 
 \begin{figure}[h!]
 \centering
@@ -92,6 +92,6 @@ Here we outline the majority of the Forge concepts, and if supported, give an ov
 \end{itemize}
 }
 
-\todo{Complete. This is mostly a table of Forge concepts and translations in Lean.}
+\todo{TODO: This is mostly a table of Forge concepts and translations in Lean. Same format as table below.}
 
 % Table of things in Forge and their translation in Lean

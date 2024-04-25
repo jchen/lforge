@@ -137,8 +137,10 @@ def Sig.elab (s : Sig): CommandElabM Unit := withRef s.name_tok do
 Toposort the sigs based on inheritance structure, based on Sig's ancestor field.
 -/
 def orderSigs (sigs : List Sig) : List Sig := do
-  -- TODO: Current for loop deep recursion?
-  let mut sigs := sigs
+  -- Filter sigs for those with no ancestor, or ancestor that actually exists in the list
+  let mut sigs := sigs.filter (λ s ↦ match s.ancestor with
+    | .none => true
+    | .some a => sigs.any (λ s' ↦ s'.name == a))
   let mut orderedSigs := []
   while sigs.length > 0 do
     let (ordered, unordered) := sigs.partition (λ s ↦ s.ancestor == .none ∨ orderedSigs.any (λ os ↦ os.name == s.ancestor))

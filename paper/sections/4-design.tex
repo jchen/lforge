@@ -83,15 +83,20 @@ The process via which to add new syntax and functionality into Lean is first to 
 
 Our elaboration function takes care of elaborating sigs and fields into their corresponding opaque types (see \cref{sec:sigs}), and creates relevant definitions for predicates and functions, inserts the corresponding translations of formulas and expressions respectively (see below \cref{sec:forge-model}), and adds said definitions into the working Lean environment.
 
-\subsection{The Forge Model in Lean}\label{sec:forge-model}
-Here we outline the majority of the Forge concepts, and if supported, give an overview of their corresponding Lean equivalents. 
+\newpage
+\section{The Forge Model in Lean: An Overview}\label{sec:forge-model}
+We need to take careful choice of how we use elaboration (see above \cref{sec:elaboration}) to translate Forge concepts into corresponding Lean equivalents. While many of our translations are self-evident, others have complex subtleties. Having the \emph{means} to perform such a translation does not make the task of translation itself any easier. We need to ensure that the translation is coherent and interoperable\footnote{Informally, our translation should be like a homomorphism, preserving the structure of Forge models.}. 
 
-{\color{OliveGreen}
-\begin{itemize}
-  \item Basically, a table of translations. 
-\end{itemize}
-}
+Here we outline the Forge syntax and give an overview of their equivalents in Lean. When there are nuances or specific edge cases in a particular translation, we refer to the appropriate section that addresses them. Where translations have not been implemented, we provide a justification behind this conscious decision. 
 
-\todo{TODO: This is mostly a table of Forge concepts and translations in Lean. Same format as table below.}
+This should serve as a birds-eye-view of the entire project, and point to specific instances of translations and implementations mentioned throughout this paper. 
 
-% Table of things in Forge and their translation in Lean
+\begin{description}
+  \item[Sigs] See \cref{sec:sigs} for a discussion on Forge sigs, how they're translated, and how quantifiers (like \texttt{one} or \texttt{abstract}) are handled.
+  \item[Formulas] Formulas evaluate to some \texttt{True} or \texttt{False} value; see \cref{tab:fmlas} for translations of various Forge formulas.
+  \item[Expressions] Expressions evaluate to some set-typed expression; see \cref{tab:exprs} for translations of the various Forge expressions. While we treat integers as expressions, they are detailed separately. 
+  \item[Predicates and functions] Predicates and functions get mapped to top-level definitions in Lean, with the body being the translated formula or expression respectively. See code listings included in \cref{sec:sigs} for an example with functions and \cref{sec:everything-is-a-set} for an example with predicates. 
+  \item[Operations with integers] See \cref{tab:ints} for translations of integer expressions, and additionally \cref{sec:integers} on how integers are specifically handled and implemented. 
+\end{description}
+
+\input{tables/forge-model.tex}

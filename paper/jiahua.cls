@@ -143,6 +143,8 @@
 % For tables
 \RequirePackage{booktabs}
 \renewcommand{\arraystretch}{1.05}
+\RequirePackage{longtable}
+\RequirePackage{threeparttable}
 
 % For links
 \RequirePackage[
@@ -461,11 +463,11 @@
 
 \newtcblisting{leanimpl}{listing only, minted language=lean, minted style=autumn,
     colback=leanimpllistingcolor, enhanced, frame hidden, top=4pt, bottom=4pt, left=4pt, right=4pt, breakable, 
-    minted options={fontsize=\footnotesize, tabsize=2, breaklines, autogobble, linenos, escapeinside=??, texcomments}}
+    minted options={fontsize=\footnotesize, tabsize=2, breaklines, autogobble, linenos, escapeinside=!!, texcomments}}
 
 \newtcblisting{leanimpl*}{listing only, minted language=lean, minted style=autumn,
     colback=leanimpllistingcolor, enhanced, frame hidden, top=4pt, bottom=4pt, left=4pt, right=4pt, breakable, 
-    minted options={fontsize=\footnotesize, tabsize=2, breaklines, autogobble, escapeinside=??, texcomments}}
+    minted options={fontsize=\footnotesize, tabsize=2, breaklines, autogobble, escapeinside=!!, texcomments}}
 
 \newtcblisting{lean}{listing only, minted language=lean, minted style=autumn,
     colback=leanlistingcolor, enhanced, frame hidden, top=4pt, bottom=4pt, left=4pt, right=4pt, breakable, 
@@ -513,7 +515,7 @@
 \BeforeTOCHead[toc]{%
   \KOMAoptions{parskip=false}% no parskip in ToC
   \RedeclareSectionCommand[afterskip=1sp minus 1sp]{section}% no skip after ToC title
-}\DeclareTOCStyleEntry[beforeskip=0.4em, entryformat=\bfseries]{section}{section}
+}\DeclareTOCStyleEntry[beforeskip=0.3em, entryformat=\bfseries]{section}{section}
 
 % fcolorboxes
 \renewcommand\fbox{\fcolorbox{lightgray}{white}}

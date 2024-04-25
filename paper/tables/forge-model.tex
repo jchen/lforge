@@ -1,0 +1,105 @@
+% !TEX root = ../../paper.tex
+
+\newpage
+\begin{table}[h!]
+  \renewcommand{\arraystretch}{1.1}
+  \centering
+  \caption{A list of Forge formula syntax and their corresponding Lean implementations in \textsc{Lforge}. \texttt{x}, \texttt{y}, and \texttt{z} represent formulas; \texttt{a} and \texttt{b} represent expressions; \texttt{T} represents the sig of expression \texttt{a}; and \texttt{x}, \texttt{y} represent integers.\\}
+  \label{tab:fmlas}
+  \begin{tabular}{>{\columncolor{forgelistingcolor}}l >{\columncolor{leanlistingcolor}}l@{}}
+  \hline
+  \cellcolor{white} \textbf{Forge Syntax} &
+    \cellcolor{white} \textbf{Lean Implementation} \\ \hline
+  \texttt{!x} &
+    $\neg \texttt{x}$ \\
+  \texttt{x \&\& y} &
+    $\texttt{x} \land \texttt{y}$ \\
+  \texttt{x || y} &
+    $\texttt{x} \lor \texttt{y}$ \\
+  \texttt{x => y} &
+    $\texttt{x} \to \texttt{y}$ \\
+  \texttt{x => y else z} &
+    $\texttt{x} \to \texttt{y} \land \neg \texttt{x} \to \texttt{z}$ \\
+  \texttt{x <=> y} &
+    $\texttt{x} \leftrightarrow \texttt{y}$ \\
+  \texttt{some a} &
+    $\exists\ \texttt{x : T}, \texttt{a x}$ \\
+  \texttt{no a} &
+    $\texttt{a} = \emptyset$ \\
+  \texttt{one a} &
+    $\exists!\ \texttt{x : T}, a = \{x\}$ \\
+  \texttt{lone a} &
+    $\texttt{one a} \lor \texttt{no a}$ \\
+  \texttt{a in b} &
+    \emph{Usually $\texttt{a} \in \texttt{b}$ or $\texttt{a} \subseteq \texttt{b}$, but varies, see \cref{sec:join-cross-subset}.} \\
+  \begin{tabular}[c]{@{}l@{}}\texttt{x = y}\\ \texttt{a = b}\end{tabular} &
+    \begin{tabular}[c]{@{}l@{}}$\texttt{x} = \texttt{y}$\\ \emph{Usually $\texttt{a} = \texttt{b}$, but varies, see \cref{sec:join-cross-subset}.}\end{tabular} \\
+  \begin{tabular}[c]{@{}l@{}}\texttt{n < m}\\ \texttt{n <= m}\\ \texttt{n > m}\\ \texttt{n >= m}\end{tabular} &
+    \begin{tabular}[c]{@{}l@{}}$\texttt{n} < \texttt{m}$\\ $\texttt{n} \leq \texttt{m}$\\ $\texttt{n} > \texttt{m}$\\ $\texttt{n} \geq \texttt{m}$\end{tabular} \\
+  $\texttt{all a : T | \{} \langle \textit{fmla}\rangle \texttt{\}}$ &
+    $\forall\ \texttt{a : T}, \langle \textit{fmla}\rangle$ \\
+  $\texttt{some a : T | \{} \langle \textit{fmla}\rangle \texttt{\}}$ &
+    $\exists\ \texttt{a : T}, \langle \textit{fmla}\rangle$ \\
+  \begin{tabular}[c]{@{}l@{}}$\texttt{one a : T | \{} \langle \textit{fmla}\rangle \texttt{\}}$\\ $\texttt{no a : T | \{} \langle \textit{fmla}\rangle \texttt{\}}$\\ $\texttt{lone a : T | \{} \langle \textit{fmla}\rangle \texttt{\}}$\end{tabular} &
+    \begin{tabular}[c]{@{}l@{}}\emph{Unimplemented}\footnotemark\\ \emph{Unimplemented}\\ \emph{Unimplemented}\end{tabular} \\
+  $\texttt{let a = }\langle\textit{term}\rangle\ \texttt{| ... }$ & $\texttt{let a}:= \langle\textit{term}\rangle \texttt{ in ...}$ \\
+  $\langle \textit{pred}\rangle\texttt{[a,...]}$ &
+  $\langle \textit{pred}\rangle\ \texttt{a ...}$ \\
+  \begin{tabular}[c]{@{}l@{}}\texttt{true}\\ \texttt{false}\end{tabular} &
+    \begin{tabular}[c]{@{}l@{}}\texttt{True}\\ \texttt{False}\end{tabular} \\ \hline
+  \end{tabular}
+  \end{table}
+  \footnotetext{Due to the semantics of the `complex quantifiers': their interactions with multiple binders and that they encode extra constraints invisibly \cite{forge-docs}, there is no suitable Lean equivalent. Users are suggested to rewrite their quantification statements using only \texttt{all} and \texttt{some}, which all complex quantifiers can be expressed using.}  
+  
+\newpage
+
+\begin{table}[h!]
+  \renewcommand{\arraystretch}{1.1}
+  \centering
+  \caption{A list of Forge expression syntax and their corresponding Lean implementations. \texttt{x} represents a formula; and \texttt{a} and \texttt{b} represent expressions.\\[-0.5em]}
+  \label{tab:exprs}
+  \begin{tabular}{>{\columncolor{forgelistingcolor}}l >{\columncolor{leanlistingcolor}}l@{}}
+      \hline
+  \cellcolor{white}\textbf{Forge Syntax} & \cellcolor{white}\textbf{Lean Implementation}                     \\ \hline
+  \texttt{\~{}a}          & \texttt{Relation.Transpose a} or \texttt{a.swap}\footnotemark \\
+  \texttt{\^{}a}          & \texttt{Relation.TransGen a}                     \\
+  \texttt{*a}          & \texttt{Relation.ReflTransGen a}                 \\
+  \texttt{a + b}        & $\texttt{a} \cup \texttt{b}$                     \\
+  \texttt{a - b}        & $\texttt{a} \setminus \texttt{b}$                \\
+  \texttt{a \& b}        & $\texttt{a} \cap \texttt{b}$                     \\
+  \texttt{a.b} \emph{or} \texttt{b[a]}                           & \emph{Varies, see \cref{sec:join-cross-subset}.}           \\
+  \texttt{a->b}         & \emph{Varies, see \cref{sec:join-cross-subset}.}  \\
+  \texttt{if x then a else b}                                    & \texttt{if x then a else b} \emph{(or, \texttt{ite x a b})}          \\
+  $\texttt{\{ x : T | } \langle\textit{fmla}\rangle \texttt{\}}$ & $\lambda\ \texttt{x} \mapsto \langle\textit{fmla}\rangle$ \\
+  $\texttt{let a = }\langle\textit{term}\rangle\ \texttt{| ... }$ & $\texttt{let a}:= \langle\textit{term}\rangle \texttt{ in ...}$ \\
+  $\langle \textit{fun} \rangle\texttt{[a,...]}$                 & $\langle \textit{fun} \rangle\ \texttt{a ...}$            \\
+  \texttt{\# a}         & \texttt{Set.ncard a}                            \\ \hline
+  \end{tabular}
+\end{table}
+\footnotetext{This depends on the type of \texttt{a}. In the specific case when \texttt{a} is a cross product, we can use \texttt{Prod.swap}.}
+
+\vspace{-1em}
+\begin{table}[h!]
+  \renewcommand{\arraystretch}{1.1}
+  \centering
+  \caption{A list of Forge integer-related syntax and their corresponding Lean implementations. \texttt{n, m} represent integers; \texttt{a} represents expressions; and \texttt{T} represents the sig of expression \texttt{a}.\\[-0.5em]}
+  \label{tab:ints}
+  \begin{tabular}{>{\columncolor{forgelistingcolor}}l >{\columncolor{leanlistingcolor}}l@{}}
+      \hline
+  \cellcolor{white}\textbf{Forge Syntax} & \cellcolor{white}\textbf{Lean Implementation}                     \\ \hline
+  \texttt{sing[a]} & \texttt{(a : ℤ)} \\
+  \texttt{sum[a]} & \texttt{Finset.sum a id} \\
+  \texttt{max[a]} & \texttt{Finset.max a}\footnotemark \\
+  \texttt{min[a]} & \texttt{Finset.min a} \\
+  \texttt{abs[n]} & \texttt{Int.natAbs n} \\
+  \texttt{sign[n]} & \texttt{Int.sign n} \\
+  \texttt{add[n, m, ...]} & \texttt{n + m + ...} \\
+  \texttt{subtract[n, m, ...]} & \texttt{n - m - ...} \\
+  \texttt{multiply[n, m, ...]} & \texttt{n * m * ...} \\
+  \texttt{divide[n, m, ...]} & \texttt{(n / m) / ...} \\
+  \texttt{remainder[n, m]} & \texttt{Int.mod n m} \\
+  $\texttt{sum a : T | \{} \langle \textit{int-expr} \rangle \texttt{\}}$ & $\texttt{Finset.sum (T : Set T)}\ \langle \textit{int-expr} \rangle$ \\
+  \hline
+  \end{tabular}
+\end{table}
+\footnotetext{With slight modifications since behavior can be undefined (can produce $\bot$ or $\top$).}

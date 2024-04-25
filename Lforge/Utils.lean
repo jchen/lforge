@@ -81,10 +81,10 @@ instance : Coe (α × β × γ) (α → β → γ → Prop) where
 
 /- Sets -/
 instance : Coe (Set (α × β)) (α → β → Prop) where
-  coe := fun s ↦ fun a b ↦ (a, b) ∈ s
+  coe := Function.curry
 
 instance : Coe (α → β → Prop) (Set (α × β)) where
-  coe := fun r ↦ {p : α × β | r p.1 p.2}
+  coe := Function.uncurry
 
 instance : Coe (Set (α × β × γ)) (α → β → γ → Prop) where
   coe := fun s ↦ fun a b c ↦ (a, b, c) ∈ s

@@ -22,7 +22,7 @@ pred someRoot {
     no next.r
 }
 \end{forge*}
-For any number of \texttt{Node} sigs we initialize Forge with (that is, for any bandwidth), Forge will be able to tell us that \texttt{¬ (injective ∧ someRoot)} is theorem (that is, no such relation can exist). 
+For any number of \texttt{Node} sigs we initialize Forge with (that is, for any bandwidth), Forge will be able to tell us that \texttt{¬(injective ∧ someRoot)} is theorem (that is, no such relation can exist). 
 
 Yet, in the Lean formulation of this specification, we realize that \texttt{injective ∧ someRoot} could be true! If we tried to prove the same in Lean, we realize that it isn't actually possible to prove the injectivity of our next relation. In fact, if we conjured our type \texttt{Node} with the same structure as $\NN$, we would have a perfectly valid \texttt{next} function (\texttt{succ}) that is injective and $0$ has no predecessor. 
 
@@ -39,6 +39,7 @@ We discuss further in \cref{sec:integers} how these instances enable us to perfo
 
 
 \subsection{Sig Inheritance and Quantifiers}\label{sec:sigs}
+\subsubsection{Inheritance}
 Many signatures in Forge have complex inheritance structures \cite{jackson2012software} that cannot be expressed in Lean using a na\"ive translation. Recall that conventionally, we would translate a signature in Forge into a corresponding opaque type in Lean as follows (see \cref{sec:forge-model}):
 
 \vspace{0.5em}
@@ -112,6 +113,8 @@ we can then use Lean's native subtyping to define our \texttt{Undergrad} type:
 \end{lean*}
 In this implementation, we also happen to get the \texttt{Undergrad} to \texttt{Student} coercion automatically as a property of subtyping.
 
+\subsubsection{Abstract Sigs}
+
 In addition, Forge introduces the concept of \emph{abstract} sigs \cite{jackson2012software}. If \texttt{Student} were an abstract sig, we might encounter \texttt{Undergrad} and \texttt{Grad} student as concrete subtypes of \texttt{abstract Student}, like:
 \begin{forge*}
 abstract sig Student {}
@@ -128,13 +131,24 @@ To inform Lean that our subtypes are distinct and unique, for each pair of subty
 \begin{lean*}
 @[reducible,simp] axiom disjoint_Student_IsUndergrad_IsGrad : 
   ∀ s : Student, ¬ (IsUndergrad s ∧ IsGrad s)
-\end{lean*}  
+\end{lean*}
 
-If furthermore, \texttt{Undergrad} and \texttt{Grad} are \texttt{one} sigs, they are not generated as subtypes but instead are generated as opaque elements of \texttt{Student}, with their membership predicates being defined as equality: 
+\subsubsection{One Sigs}
+
+If furthermore, \texttt{Undergrad} and \texttt{Grad} are \texttt{one} sigs without fields, they are not generated as subtypes but instead are generated as opaque elements of \texttt{Student}, with their membership predicates being defined as equality: 
 \begin{lean*}
 opaque Undergrad : Student
 def IsUndergrad (s : Student) := (Undergrad = .)
 \end{lean*}
+
+For \texttt{one} sigs with fields, we still need the sig to be a type in Lean so we can construct the fields relating to that sig. In this case, we have defined a type class of \texttt{One} that contains the single element \texttt{One.one} and a proof that all elements of this type are equal to this element: 
+\begin{leanimpl*}
+class SigQuantifier.One (α : Type) :=
+  one : α
+  allEq : ∀ x : α, x = one
+\end{leanimpl*}
+and we also introduce a corresponding coercion from a \texttt{One α} to the single element of type \texttt{α}, which is discussed further in \cref{sec:type-coercions}.
+\subsubsection{Processing Sigs}
 
 Such an analysis and translation of inheritance requires a global processing of the Forge program in Lean, since every expression emitted by our elaborator ought to have well-defined types and terms (that is, cannot be waiting on a term to be defined). Since Forge fields can depend on any sig, we need to `lift' sigs to define first before all fields and predicates can be defined. Furthermore, sig quantifiers and inheritance structures require preprocessing all sigs to generate a topological sort of the inheritance structure before expressing any of their translations in Lean. Since Forge is not a `local' language and all sig declarations are lifted, this was not a problem for us before we entered Lean. As such, sigs can be specified in any order in Forge. 
 
@@ -174,6 +188,7 @@ Note that \texttt{s} is a `singleton', but it is used as if it were an honest-to
 
 Consider an alternative when we relax the requirement that \texttt{s} ought to be a singleton in the Forge source: 
 
+\newpage
 \vspace{0.5em}
 \noindent\begin{minipage}{0.5\textwidth}
 \begin{forge*}
@@ -210,7 +225,6 @@ s.friends
 \vspace{0.5em}\newline
 which is immediately more cumbersome than our earlier solution. 
 
-\newpage
 The same applies when we now try to implement the inclusion \texttt{in} operator: 
 
 \vspace{0.5em}
@@ -254,31 +268,6 @@ Then, when translating $\texttt{a}\bowtie \texttt{b}$, we can nondiscriminately 
 
 For many operators on expressions (see \cref{sec:join-cross-subset} below), their implementations in Lean are overloaded to accomodate the fact that Lean prefers elements when they are elements and sets only when necessary, contrasted to Forge's `everything-is-a-set' approach. This allows us to produce semantically equivalent translations that are more simplified when possible leveraging Lean's type class system that is able to determine types of operands at the time of translation. 
 
-\subsubsection{Types as sets}
-Forge's typing ambiguity further exemplifies itself in allowing types to be used where a set is expected to denote the set of all elements in said type. For example:
-\begin{forge}
-pred isAFriend[s: Student] {
-  s in Student.friends
-}
-\end{forge}
-is the predicate that \texttt{s} is \emph{someone}'s friend, where the set of all friends is the join of $\texttt{Student} \bowtie \texttt{friends}$ (which is equivalent to the set comprehension expression \texttt{\{s: Student | some t: Student | s in t.friends\}}). Here, \texttt{Student} is being used to denote the \emph{type} of \texttt{s} on line 1 and the set corresponding to type \texttt{Student} on line 2. 
-
-In our translation, we want to be able to use the type \texttt{Student} interchangeably in places that expect a set of type \texttt{Student} as the set of all \texttt{Student}s. Since we included our finiteness \texttt{Fintype} property as an instance when translating sigs (see \cref{sec:finiteness}\todo{check this after writing that section}), we can create a coercion that coerces a Lean \texttt{Type}, given that it is a finite type, into a set of that type using the definition of the \texttt{Fintype} typeclass. 
-\begin{leanimpl*}
-instance [f: Fintype α] : CoeDep Type (α : Type) (Set α) where
-  coe := (f.elems : Set α)
-\end{leanimpl*}
-
-\subsection{Typing \& Type Coercions}\label{sec:type-coercions}
-\todo{TODO}
-{\color{OliveGreen}
-\begin{itemize}
-  \item Discuss the different ways of representing a type in \textsc{Lforge}.
-  \item \texttt{α}, \texttt{Set α}, \texttt{α -> Prop}, etc. 
-  \item Even more for multi-arity, \texttt{Set (a × b)}, \texttt{a -> b -> Prop}, etc are all different. We need to address these when doing \cref{sec:join-cross-subset}. 
-  \item Sometimes, Lean cannot infer explicit types, we've added the \texttt{T /* as Set T */} syntax for explicit conversions. 
-\end{itemize}}
-
 \subsection{Relational Joins, Cross, Inclusion, Equality}\label{sec:join-cross-subset}
 
 We need to take special care when implementing expression operators in Lean whenever one of these conditions are true: 
@@ -291,12 +280,15 @@ We discuss (2) extensively in \cref{sec:everything-is-a-set}, and introduce usin
 The specific operators that we needed to take special care translating, the different types that they permit, and their translations in Lean are detailed below in \cref{tab:forge-operators}. 
 
 \begin{table}[h!]
+\renewcommand{\arraystretch}{1.2}
 \centering
+\caption{Forge binary operators and corresponding implementations based on operand types.\newline}
+\label{tab:forge-operators}
 \begin{tabular}{@{}l >{\columncolor{forgelistingcolor}}l >{\columncolor{leanlistingcolor}}l@{}}
-\toprule
-Forge Operator &
-  \cellcolor{white}\begin{tabular}[c]{@{}l@{}}Possible Types\\[-0.9em] \tiny{(singletons lowercase, sets uppercase)}\end{tabular} &
-  \cellcolor{white}Lean Implementation \\ \midrule
+\hline
+\textbf{Forge Operator} &
+  \cellcolor{white}\begin{tabular}[c]{@{}l@{}}\textbf{Possible Types}\\[-0.9em] \tiny{(singletons lowercase, sets uppercase)}\end{tabular} &
+  \cellcolor{white}\textbf{Lean Implementation} \\ \hline
 Membership: \texttt{a in b}         & \texttt{a in b} & \texttt{a = b}                 \\
                                     & \texttt{a in B} & \texttt{a ∈ B}                 \\
                                     & \texttt{A in b} & \texttt{A = Set.singleton b}   \\
@@ -312,17 +304,97 @@ Cross: \texttt{a->b}                & \texttt{a->b}   & \texttt{(a, b)}         
   &
   \texttt{a->B} or \texttt{A->b} &
   \textit{Varies}, like \texttt{λ a f a' b ↦ a = a' ∧ f b} \\
-                                    & \texttt{A->B}   & \texttt{λ f g a b ↦ f a ∧ g b} \\ \bottomrule
+                                    & \texttt{A->B}   & \texttt{λ f g a b ↦ f a ∧ g b} \\ \hline
 \end{tabular}
-\caption{Forge binary operators and corresponding implementations based on operand types.}
-\label{tab:forge-operators}
 \end{table}
 
 When we do specify special Forge operators, we additionally specify custom infix operators for our operations to pretty-print in the Lean infoview window (see \cref{fig:mutex-proof} for an example): 
 \begin{leanimpl*}
-infix:50 ?\texttt{\textquotedbl }$\bowtie$\texttt{ \textquotedbl}?  => HJoin.join
+infix:50 !\texttt{\textquotedbl }$\bowtie$\texttt{ \textquotedbl}! => HJoin.join
 \end{leanimpl*}
 so translated statements look like $\texttt{a}\bowtie\texttt{b}$ instead of \texttt{Forge.HJoin.join a b}. 
+
+\subsection{Typing \& Type Coercions}\label{sec:type-coercions}
+While Forge treats all expressions as sets (see \cref{sec:everything-is-a-set}), there can often be several ways to represent a set-like object in Lean. 
+
+The most common representation of a set of type \texttt{α} is \texttt{α → Prop}, which can be thought of as the membership predicate representing that set. This is oftentimes useful since checking set membership of \texttt{x : α} on set \texttt{s : α → Prop} is just a functional application: \texttt{s x}. This is also the canonical representation of sets in Lean: a \texttt{Set α} is definitionally equal to \texttt{α → Prop}, and \texttt{a ∈ b} is definitionally equal to \texttt{b a}. These representations can, for the most part, be used interchangeably. 
+
+\subsubsection{Singletons as Sets}
+
+However, there are additional expressions that Forge sees as sets but Lean does not. An element \texttt{x : α} is a singleton set, which we discuss extensively in \cref{sec:everything-is-a-set}. When possible, we can use type classes to `tailor' an operation to whether an expression is a singleton or a true set; and the different implementations are detailed in \cref{sec:join-cross-subset}. 
+
+However, we need an `escape plan' if no such tailored implementation exists. Hence, we include a coercion from all singletons to sets of singletons. At worst, we can treat individual elements as the set containing just them\footnote{The implementation of \texttt{coe} has type \texttt{α → α → Prop}, which we can implement point-free---and there is a desire for syntactically simpler translations which are easier to work with in the Lean environment.}: 
+\begin{leanimpl*}
+instance : Coe α (α → Prop) where
+  coe := Eq
+\end{leanimpl*}
+
+\subsubsection{Sigs as Sets}
+
+Additionally, a translated sig \texttt{(α : Type)} is expected to denote the set of all elements in that sig. For example:
+\begin{forge}
+pred isAFriend[s: Student] {
+  s in Student.friends
+}
+\end{forge}
+is the predicate that \texttt{s} is \emph{someone}'s friend, where the set of all friends is the join of $\texttt{Student} \bowtie \texttt{friends}$ (which is equivalent to the set comprehension expression \texttt{\{s: Student | some t: Student | s in t.friends\}}). Here, \texttt{Student} is being used to denote the \emph{type} of \texttt{s} on line 1 and the set corresponding to type \texttt{Student} on line 2. 
+
+In our translation, we want to be able to use the type \texttt{Student} interchangeably in places that expect a set of type \texttt{Student} as the set of all \texttt{Student}s. Since we included our finiteness \texttt{Fintype} property as an instance when translating sigs (see \cref{sec:finiteness}), we can create a coercion that coerces a Lean \texttt{Type}, given that it is a finite type, into a set of that type using the definition of the \texttt{Fintype} typeclass. 
+\begin{leanimpl*}
+instance [f: Fintype α] : CoeDep Type (α : Type) (Set α) where
+  coe := (f.elems : Set α)
+\end{leanimpl*}
+
+When a sig is quantified \texttt{one} (see \cref{sec:sigs}), we also have a corresponding coercion of that sig into the single value that inhabits it: 
+\begin{leanimpl*}
+@[reducible, simp] instance [o: SigQuantifier.One α] : CoeDep Type (α : Type) α where
+  coe := o.one
+\end{leanimpl*}
+
+\subsubsection{Multi-arity Sets}
+
+Furthermore, there are additionally more ways of representing multi-arity relations in Lean that aren't immediately interchangeable. Where \texttt{Set α} and \texttt{α → Prop} are definitionally the same type, \texttt{Set (α × β)} and \texttt{α → β → Prop} are not. For each arity, we need to make use of either \texttt{Function.curry} and \texttt{Function.uncurry}, or custom coercion functions, to interchange between the two, for example: 
+\begin{leanimpl*}
+instance : Coe (Set (α × β)) (α → β → Prop) where
+  coe := Function.curry
+
+instance : Coe (α → β → Prop) (Set (α × β)) where
+  coe := Function.uncurry
+
+instance : Coe (Set (α × β × γ)) (α → β → γ → Prop) where
+  coe := fun s ↦ fun a b c ↦ (a, b, c) ∈ s
+
+instance : Coe (α → β → γ → Prop) (Set (α × β × γ)) where
+  coe := fun r ↦ {p : α × β × γ | r p.1 p.2.1 p.2.2}
+\end{leanimpl*}
+Future work will involve attempting to remove cross products and standardize all multi-arity sets, which are currently introduced by Forge cross products (see \cref{sec:join-cross-subset}). 
+
+\subsubsection{Explicit Coercions}
+
+The Lean elaborator, which is responsible for type unifications, is occasionally unable to find such coercions we have introduced due to having many possible pathes of coercion. This is further exacerbated by the fact that our type might appear in an expression where we have encoded several implementations (like equality, see \cref{sec:join-cross-subset}). 
+
+In situations such as these, we might encounter type errors even when coercions should have been taken, such as 
+\begin{forge*}
+pred raise[pre: State, p: Process, post: State] {
+  pre.loc[p] = Uninterested
+  post.loc[p] = Waiting
+  post.flags = pre.flags + p -- Type error!
+  all p2: Process | p2 != p => post.loc[p2] = pre.loc[p2]
+}
+\end{forge*}
+which produces the following error\footnote{This example is taken from \cref{sec:mutex}.}:
+
+\begin{center}
+  \fbox{\includegraphics[width=0.5\textwidth,trim={0 0 0 0},clip]{images/screenshots/type-coercion-error.png}}
+\end{center}
+
+To solve this, we retrofit syntax onto Forge that allows us to explicitly introduce casts where needed to provide Lean with additional type-hints that it can utilize in type unification. We can cast \texttt{p} explicitly, which is a \texttt{Process} type, into a \texttt{Set Process} (the same as \texttt{Process → Prop}) type using the following syntax: 
+\begin{forge*}
+post.flags = pre.flags - p /* as Set Process */
+\end{forge*}
+which also coincides with Forge comments to preserve interoperability. 
+
+Future work on the translated type system will involve improving coercions and operations that reduces or completely eliminates the need for explicit type annotations. 
 
 \subsection{Integers}\label{sec:integers}
 Forge and Alloy come with a unique integer model---due to the fact that models are compiled down to boolean constraints to be solved by a SAT solver, integers are severely limited in their bitwidth \cite{jackson2012software,nelson2024artifact}. The default bitwidth on integers in Forge is $4$, which gives us a grand total of $16$ integers. 
@@ -374,7 +446,7 @@ We approach the cardinality problem by using \texttt{Set.ncard}\footnote{More sp
 To illustrate, the translations of the two predicates (playing card hand and graph) above in Lean, eliding sig and field translations, would be as follows:
 \begin{lean*}
 def threeOfAKind (hand : Set Card) : Prop :=
-  Set.ncard (hand ?$\bowtie$? suit) = 1 ∧ Set.ncard hand = 3
+  Set.ncard (hand !$\bowtie$! suit) = 1 ∧ Set.ncard hand = 3
 \end{lean*}
 and 
 
@@ -385,3 +457,5 @@ def nodeWeightIsEdgeWeightPlusOne (n : Node ) : Prop :=
 \footnotetext{There are select details surrounding type coercions, universe levels, and the noncomputability of our integer functions that still remain to be resolved. }
 
 While we did need to retrofit additional instance axioms for each type generated to make an integer model work, it is impressive that we were able to extract so much integer functionality out of Forge in within our limited Lean model in the first place. Implementing Forge integers within our translation is also a hallmark of the motivation behind our project in the first place---that in some cases, we are able to endow \emph{additional} functionality to the Forge specification language by interpreting it in a proof assistant instead of the standard relational Forge implementation. 
+
+The complete translation of Forge integers into Lean is overviewed in \cref{tab:ints} earlier in \cref{sec:forge-model}. 

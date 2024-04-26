@@ -14,7 +14,7 @@ Superficially, by defining our syntax as Lean objects and isolating our keywords
 
 \subsubsection{Types on Hover}
 
-Lean exposes an \texttt{addTermInfo'} method that allows us to attach declared names to pieces of syntax (nodes in Lean's concrete syntax tree), including custom syntax like ours for Forge. As such, we can annotate relevant pieces of syntax within our Forge specification to reflect names and types that are within scope. When the user hovers their mouse over a piece of syntax corresponding to a Forge expression, a hovering tooltip will display with the type of the expression. In \cref{fig:sc-highlighting-hover}, the tooltip shows the type of a Forge predicate defined earlier in the file. 
+Lean exposes an \texttt{addTermInfo'} method that allows us to attach declared names to pieces of syntax (nodes in Lean's concrete syntax tree), including custom syntax like ours for Forge. As such, we can annotate relevant pieces of syntax within our Forge specification to reflect names and types that are within scope. When the user hovers their mouse over a piece of syntax corresponding to a Forge expression, a hovering tooltip will display the type of the expression. In \cref{fig:sc-highlighting-hover}, the tooltip shows the type of a Forge predicate defined earlier in the file. 
 
 \begin{figure}
   \centering
@@ -57,7 +57,7 @@ Lean's error locality system allows its error monad to refer to any piece of syn
 
 \subsubsection{Types}
 
-Lean's dependent type system is both a blessing and a curse when it comes to the task of translating a language with a foreign type system into Lean. While the type system is a highly optimized algorithm that attempts to resolve type coercions, type classes, and reductions \cite{de2015lean}, it at often delicate and temperamental, especially when we are working at such a low level of emitting Lean \texttt{expr}s, which happens \emph{after} type unification (see \cref{sec:elaboration}). We discuss some of the downsides of such a strict type system in \cref{sec:type-coercions}, and introduced \textsc{Lforge} features that circumvent Lean's restrictions and play into Lean's type system. 
+Lean's dependent type system is both a blessing and a curse when it comes to the task of translating a language with a foreign type system into Lean. While the elaborator is a highly optimized algorithm that attempts to resolve type coercions, type classes, and reductions \cite{de2015lean}, it is often delicate and temperamental, especially when we are working at such a low level of emitting Lean \texttt{expr}s, which happens \emph{after} type unification (see \cref{sec:elaboration}). We discuss some of the downsides of such a strict type system in \cref{sec:type-coercions}, and introduced \textsc{Lforge} features that circumvent Lean's restrictions and play into Lean's type system. 
 
 Here, we discuss some of the merits of implementing a DSL designed around Lean's extensive type system. One of the side effects of translating Forge into Lean is that we inherit Lean's powerful type unification and checking system. This allows us, at specification-time, to check for type errors within the specification. Alloy, on the other hand, is purposefully untyped \cite{jackson2019alloy} and only reports type errors at runtime when the successful evaluation of expressions results in the empty expression \cite{edwards2004type}. This proves difficult to debug and unwieldy for users to understand, as \cite{ngpdbccdlrrvwwk-oopsla-2024} observes. For students who are newly learning the idea of relations, sets, and units, lacking instantaneous feedback on the validity of types and expressions is immensely useful. 
 
@@ -78,7 +78,7 @@ Our embedding of Forge within Lean, especially our choice to map Forge structure
 
 All Forge specifications, once inserted into a Lean file, will generate appropriate definitions directly into the Lean environment. Using Lean syntax, we can further interact with these definitions from Forge, perhaps writing predicates or definitions that build on these. This interaction goes the opposite way as well: where Forge expects an expression, predicate, or function, declarations from Lean can be used seamlessly. This provides a frictionless user experience and allows the user to add additional constraints and rules, written in Lean, to a preexisting Forge model. Furthermore, this alleviates the tension incurred of creating the perfect translation: we are aware of the fact that only a subset of Forge is implemented due to the technical restrictions of both platforms. However, with appropriate error reporting (see above Error Checking), users can be prompted to extend their Forge specifications with additional Lean rules. Mixed execution of Forge and Lean means that Forge specifications are now extensible using a much broader functional programming language. 
 
-The following is an example of mixed execution of Forge and Lean using \textsc{Lforge}. The full specification of this example, a model for mutual exclusion of processes, is discussed in \cref{sec:mutex}. 
+The following is an example of mixed specification of Forge and Lean using \textsc{Lforge}. The full specification of this example, a model for mutual exclusion of processes, is discussed in \cref{sec:mutex}. 
 
 \input{sections/listings/mixins.tex}
 

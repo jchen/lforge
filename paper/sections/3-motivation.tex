@@ -1,17 +1,17 @@
 % !TEX root = ../paper.tex
-\section{Motivation}
+\section{Motivation}\label{sec:motivation}
 
 As discussed in \cref{sec:bg-forge} and \cref{sec:bg-related}, there is a desire for more functionality out of specification languages like Alloy and Forge for them to be more usable and widely applicable in the real world. 
 
 There is a want for something beyond model-finding capabilities from tools like Alloy and Forge \cite{milicevic2014alpha}. By adding the deductive `power' of interactive theorem prover to Forge, we open up possibilities of using Forge for types of analyses not previously possible. 
 
-Furthermore, one of the pain points is that Forge is constricted to checking small examples and models---Forge scales poorly with large models which makes complex problems difficult to model and analyze \cite{lzhu-honorsthesis}. By embedding Forge within Lean, we can break Forge specifications free of the bounds imposed by the SAT solver backend and instead utilize Lean's size-nostalgic logical framework for proofs of model properties. 
+Furthermore, one of the pain points of model searching is that systems are constricted to checking small examples and models---model checkers of the likes of Forge scale poorly with large models which makes complex problems difficult to model and analyze \cite{bagheri2016titanium,ringert2020semantic}. By embedding Forge within Lean, we can break Forge specifications free of the bounds imposed by the SAT solver backend and instead utilize Lean's size-agnostic logical framework for proof of model properties. Pivoting the same model into a different class of models---a theorem prover---we gain the capabilities of writing proofs at the cost of needing to guide the model through a written proof instead of an automated search.
 
 \subsection{A Toy Example}\label{sec:toy-example}
 
 We envision the workflow of someone using \textsc{Lforge} to be as follows: 
 \begin{enumerate}
-    \item The user specifies a model in interest, or they already have a completed model in Forge that they would like to formalize. Within Forge, the user writes relevant predicates and uses Forge's SAT backend to quickly check if they are satisfiable (and what satisfying instances look like), or if they are not satisfiable (that is, the negation is a theorem). Users might isolate specific predicates that they would like to prove in detail. 
+    \item The user specifies a model of interest, or they already have a completed model in Forge that they would like to formalize. Within Forge, the user writes relevant predicates and uses Forge's SAT backend to quickly check if they are satisfiable (and what satisfying instances look like), or if they are not satisfiable (that is, the negation is a theorem). Users might isolate specific predicates that they would like to prove in detail. 
     \item In a new Lean file, the user imports the \textsc{Lforge} module and pastes their Forge specification in, verbatim. If they started the process working in the \textsc{Lforge} subset of Forge, no changes need to be made. If they are working with an existing Forge file, our tool will prompt the user to make any modifications necessary to keep it compliant with the subset of syntax, including potential type annotations (see \cref{sec:type-coercions}). After this, all sigs, fields, and predicates are available in Lean. 
     \item Optionally, a user might want to make \emph{additional} claims or write predicates using Lean's syntax. They have the option to do so here (see Mixed Execution, \cref{sec:dsl}). 
     \item Finally, the user will identify important predicates within their specification that they want to prove generally. They do so using the interactive theorem prover in Lean. 
@@ -23,41 +23,43 @@ We might want to construct a formal model for this village for which the barber 
 
 \begin{forge*}
 sig Person {
-  shaver: one Person
+  shaved_by: one Person
 }
 
 pred shavesThemselves[p: Person] {
-  p = p.shaver
+  p = p.shaved_by
 }
 
 pred existsBarber {
   some barber : Person | all p : Person | {
-    not shavesThemselves[p] <=> p.shaver = barber
+    not shavesThemselves[p] <=> p.shaved_by = barber
   }
 }
 \end{forge*}
 
-Attempting to run this model for \texttt{existsBarber} will yield an \texttt{Unsatisfiable}. After all, if the barber doesn't shave themselves, yet they shave all those who don't, they they ought to shave themselves. To prove this statement (and not merely rely on the fact that Forge was not able to find a satisfiable instance within its bounds), we need to transition to a theorem prover. 
+Attempting to run this model for \texttt{existsBarber} will yield an \texttt{Unsatisfiable}. After all, if the barber doesn't shave themselves, yet they shave all those who don't, they they ought to shave themselves. To prove this statement more generally (and not merely rely on the fact that Forge was not able to find a satisfiable instance within its bounds), we need to transition to a theorem prover\footnote{\emph{An aside:} We are aware that this is not generally true, and that our example might in fact be \emph{overly} simplified. The Bernays-Sch\"onfinkel-Ramsey (or \emph{effectively propositional}) class of first-order logic formulas---formulas written in the form $\exists x_1 \dots \exists x_n \forall y_1 \dots \forall y_m, \phi(x_1, \dots, x_n, y_1, \dots, y_m)$---are in fact decidable \cite{bernays1928entscheidungsproblem,ramsey1987problem}. Satisfiability for these formulas in a finite model with pre-determined size (as a function of the formula) \emph{is} sufficient and necessary for general satisfiability of the formula. The statement of the barber paradox, interpreting \texttt{shaved_by} as a relation, is in such a form. One could imagine an analogous example that does not fall into such a specific class of first-order formulas, where Forge's bounded satisfiability search is not sufficient. The vast majority of model specifications and their properties predicate lie outside this class of formulas.}. 
 
 \textsc{Lforge} aids in porting the entire specification into Lean, producing a set of equivalent Lean definitions: 
 
 \begin{lean*}
 opaque Person : Type
-opaque shaver : Person → Person
+opaque shaved_by : Person → Person
 
 def shavesThemselves : Person → Prop :=
-  fun p ↦ shaver p p
+  fun p ↦ shaved_by p p
 
 def existsBarber : Prop :=
-  ∃ (barber : Person), ∀ (p : Person), ¬shavesThemselves p ↔ shaver p barber
+  ∃ (barber : Person), ∀ (p : Person), ¬shavesThemselves p ↔ shaved_by p barber
 \end{lean*}
-At this point, we might want to continue to provide a mathematical proof, as we observed in Forge, that there cannot possibly be a barber in this town. That is, 
+At this point, we might want to continue to provide mathematical proof, as we observed in Forge, that there cannot possibly be a barber in this town. That is, 
 
 \begin{lean*}
 theorem no_barber : ¬ existsBarber := by ...
 \end{lean*}
 The conclusion of this example, including the Lean proof of our property, is provided in \cref{sec:toy-example-continued}. Note that this was not possible working solely in Forge, which only checks for the existence of examples or counterexamples within the bounds that it knows. 
 
-While this was a simple example, it serves as a demonstration of what is possible under this dual framework. One might provide a specification of a protocol and prove that no vulnerabilities exist (or that it has all the desired properties). Lean would serve invaluable in proving the correctness of properties about any real-life system described and prototyped in the Forge specification language. All this stays true to the goal of providing better formal methods tools that are more universally applicable and practical. 
+While this was a simple example, it is a demonstration of what is possible under this dual framework. One might provide a specification of a protocol and prove that no vulnerabilities exist (or that it has all the desired properties). Lean would serve invaluable in proving the correctness of properties about any real-life system described and prototyped in the Forge specification language. All this stays true to the goal of providing better formal methods tools that are more universally applicable and practical. 
 
-Furthermore, the pedagogical implications of such a program is also worth noting. Forge, designed to be a pedagogical language, seeks to teach formal methods gradually and introduce students to formal methods tools enabling them to work better in the real world and industry \cite{ngpdbccdlrrvwwk-oopsla-2024}. Students who are interested in formal methods often take Logic for Systems in the Computer Science department at Brown, the course which Forge was developed for and taught in. Students continue on to take Formal Proof and Verification, a course that teaches the use of proof assistants via Lean. Both courses have open-ended research-style final projects that encourages students to explore and formalize topics that they are interested in. We believe \textsc{Lforge} also provides an invaluable opportunity for students who have background with both formal methods tools (or who might merely want to explore beyond) to bridge their knowledge between automated reasoning and formalization via proof. While Forge instructs us that a specification or predicate is true, Lean reveals \emph{why} the specification is true. Oftentimes, this makes it difficult to debug incorrect specifications without additional tools like visualizations \cite{ngpdbccdlrrvwwk-oopsla-2024}. By attempting to construct proofs of model properties, students are compelled to think about their modeling choices and justify each statement, seamlessly translating between the statements they are making and proofs of their correctness \cite{avigad2019learning}. 
+Furthermore, the pedagogical implications of such a program are also worth noting. Forge, designed to be a pedagogical language, seeks to teach formal methods gradually and introduce students to formal methods tools enabling them to work better in the real world and industry \cite{ngpdbccdlrrvwwk-oopsla-2024}. Students who are interested in formal methods often take Logic for Systems in the Computer Science department at Brown, the course in which Forge was developed and taught. Students continue to take Formal Proof and Verification, a course that teaches the use of proof assistants via Lean. Both courses have open-ended research-style final projects that encourage students to explore and formalize topics that they are interested in. 
+
+We believe \textsc{Lforge} provides an opportunity for students who have a background with both formal methods tools (or who might merely want to explore beyond) to bridge their knowledge between automated reasoning and formalization via proof. While Forge instructs us that a specification \emph{potentially has} certain properties, Lean reveals \emph{why} the specification satisfies its properties. Forge provides a simple and easy avenue for students to construct examples and counterexamples that they can then visualize \cite{ngpdbccdlrrvwwk-oopsla-2024}, but can then trade the automated (counter)example search functionalities of Forge in favor of a theorem prover that allows them to construct a formal proof now that they are motivated by examples and quick prototyping. By attempting to construct models and state (then prove) properties of said model, students are compelled to think about their modeling choices, first verify them on a first-order via an automated search via Forge, only then do they attempt to justify each statement within Lean, seamlessly translating between the statements they are making and proofs of their correctness \cite{avigad2019learning}. 

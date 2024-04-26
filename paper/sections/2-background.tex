@@ -1,43 +1,29 @@
 % !TEX root = ../paper.tex
-\section{Background}
+\section{Background}\label{sec:background}
 
-The following subsections provide the necessary background relating to Forge, Lean, as well as existing work translating and embedding Alloy and related tools in a multitude of target languages. 
-
-\emph{\color{OliveGreen} The following is a summary of some of the sources and related work I've found: I still need to write this section.}\todo{write this section}
+We provide some necessary background relating to Forge, and Lean, as well as existing work translating and embedding Alloy and related tools in a multitude of target languages. 
 
 \subsection{\emph{Forge}, \emph{Alloy}, and other relational specification languages}\label{sec:bg-forge}
-{\color{OliveGreen}
-\begin{itemize}
-    \item Discuss Alloy and Forge, how they work, etc. 
-    \item \cite{torlak2007kodkod} kodkod
-    \item \cite{torlak2013applications} discussion of Alloy
-    \item \cite{frias2005dynalloy} extends Alloy with actions
-    \item \cite{srajesh-honorsthesis,lzhu-honorsthesis} uses Forge to verify privacy policies. But oftentimes this task is made faster within a `real' programming language.\todo{change this?}\todo{more examples of alloy}
-\end{itemize}}
+
+The Z language pioneered the formal specification of software systems, providing the first syntax and language for users to formally specify software specifications and behaviors \cite{spivey1992z}. Alloy builds on Z by introducing a simpler yet expressive relational logic whose models can be automatically decided in small scopes \cite{jackson2019alloy}. Alloy's automatic instance search is achieved using its backend Kodkod, which translates relational specifications into SAT problems to solve them \cite{torlak2007kodkod}. While the search space was often small and scaled super-exponentially with respect to the size of the model \cite{jackson2019alloy}, automated solvers provided what traditional theorem provers lacked---automation. 
+
+Both Alloy and Kodkod have been widely used and implemented in practice. \cite{torlak2013applications} provides some broad use cases of Alloy: it is used to model software designs, verify program specifications, generate test cases, and synthesize examples and counterexamples. Alloy is further used across a diverse selection of fields ranging from cryptography to networking \cite{torlak2013applications}. Kodkod, which provides a convenient specification API accessible outside of the Alloy language \cite{torlak2007kodkod}, is also widely utilized. Nitpick, proof assistant Isabelle's counterexample generator, relies on Kodkod as its automated search backend \cite{blanchette2010nitpick}. Bounded verifiers and domain-specific analyzers alike, such as Forge \cite{ngpdbccdlrrvwwk-oopsla-2024}, a pedagogical offshoot of Alloy; and Margrave, an access-control policy analyzer \cite{nelson2010margrave}, all utilize the Kodkod solver. Similar projects porting Alloy into other languages and environments (see below \cref{sec:bg-related}) also similarly utilize Kodkod as well as Alloy's syntax to some degree. 
+
+Forge specifically, improves Alloy on the principles of learnability and usability, whilst maintaining core features of Alloy such as push-button automation and visualization of instances. We focus on Forge because the philosophy behind Forge's inception are core to our project as well: we want to focus on usability, we select appropriate and applicable subsets of the Forge specification language, and that its simpler syntax compared to Alloy's provides a suitable translation target. We furthermore find that Forge's focus on the Froglet language level---which restricts fully relational functionality---is also compatible with the capabilities and type system of Lean. 
+
+% We also recognize that this project also builds on a history of theses at Brown that utilize Forge as an accessible introduction to formal methods modeling. \cite{srajesh-honorsthesis,lzhu-honorsthesis}
 
 \subsection{\emph{Lean} and other proof assistants}\label{sec:bg-lean}
-{\color{OliveGreen}
-\begin{itemize}
-    \item \cite{nawrocki2023extensible} discusses Lean user interface
-    \item \cite{moura2021lean} discusses Lean's extensibility. 
-\end{itemize}}
+Lean \cite{moura2021lean}, along with other proof assistants such as Isabelle \cite{paulson1994isabelle} and Coq \cite{bertot2013interactive}, work in a drastically different way compared to Alloy. While they are not limited by the same bound constraints of Kodkod-based solvers, this comes at the cost of automation. Proof assistants require guidance from the user, just like in traditional mathematical or logical proof, to prove statements and theorems. Automation of varying kinds and capabilities are often provided as additional plugins separate from the core language \cite{blanchette2010nitpick,ekici2017smtcoq,czajka2018hammer,limperg2023aesop}. 
+
+One of Lean's\footnote{Specifically, Lean 4.} particular focus is on extensibility and ease-of-use. Lean 4 is a theorem prover \emph{and} programming language designed around metaprogramming, extensibility \cite{moura2021lean}, and user experience \cite{nawrocki2023extensible}. Lean exposes its own implementation for users to extend, allowing us to implement additional features, and even syntax, into the language with relative ease. Furthermore, it's built on a platform that allows us to access first-class IDE features, which enables us to provide a DSL experience that is next-to-native. Lean's flexibility and extensibility suit it for both implementing a translation, as well as presenting such a translation to the end-user. 
 
 \subsection{Related Work}\label{sec:bg-related}
-{\color{OliveGreen}
-\begin{itemize}
-    \item \cite{ullrich2022beyond} discusses Lean 4's capabilities of extensible syntax. 
-    \item \cite{lewis2022bi} describes interoperability between Lean and Mathematica. 
-    \item \cite{gladshtein2024small} implements the small scale reflection tactic language as a Lean DSL. 
-    \item \cite{ngpdbccdlrrvwwk-oopsla-2024} discusses sublanguages of Forge, and that these are viable. We can reasonably restrict language features. 
-    \item \cite{milicevic2010executable} makes Alloy executable in Java. 
-    \item \cite{milicevic2014alpha} embeds Alloy in Ruby
-    \item \cite{krings2018translation} Alloy to B 
-    \item \cite{malik2010translating} z to Alloy
-    \item \cite{mikhailov2002approach} Combining Z and Alloy
-    \item \cite{milicevic2015advancing} describes programming environment where imperiative and declarative styles are interweaved. 
-    \item \cite{st2023comparison} discuss environments \emph{built around} Forge, for both data processing and verification at simultaneously. \emph{solver-aided programming language}
-    \item \cite{korner2022embedding} specification as data, embed B specification language in Clojure. 
-    \item \cite{arkoudas2004integrating} Proving Alloy specifications in Athena \cite{arkoudas2000denotational,musser2003proving}.
-    \item \cite{nelson2015static} building on Alloy for differential software analysis. 
-    \item \cite{blanchette2010nitpick} Kodkod in Isabelle
-\end{itemize}}
+
+Both Alloy and Lean have long histories of integration with other tools and programming languages. 
+
+Alloy (or the Kodkod solver) has been translated or embedded in: its predecessor model specification language Z \cite{malik2010translating}; object-oriented programming languages Java \cite{milicevic2010executable} and Ruby \cite{milicevic2014alpha}, which introduces `mixed execution' between automated searches and imperative code; as well as the Athena \cite{arkoudas2000denotational,musser2003proving}, B \cite{mikhailov2002approach,krings2018translation}, and Isabelle \cite{blanchette2010nitpick} theorem provers. \cite{st2023comparison} discusses a class of \emph{solver-aided programming languages} where programming environments are built around the Alloy solver that allows data processing and software verification simultaneously. Several extensions of Alloy exist either to adapt it to a specific problem \cite{nelson2014tierless,nelson2015static} or to introduce new functionality \cite{nelson2012toward,milicevic2019alloy,yang2020alloymc}. 
+
+There are also many examples of Lean's extensibility and interoperability. \cite{ullrich2022beyond} describes Lean 4's extensive macro system that allows it to be extremely extensible. \cite{gladshtein2024small} implements a custom proof methodology, Small Scale Reflection, via Lean's metaprogramming framework into Lean's proofwriting mode, complete with custom syntax, macros, elaboration functions, and visual support. \cite{lewis2022bi} implements an interface between Lean and computer algebra system Mathematica, allowing users to interact with declarations and harness the capabilities of both tools. 
+
+We believe that these serve as guiding foundations atop which we implement our translation. 

@@ -2,7 +2,7 @@ import Lforge.Ast.Syntax.Common
 
 namespace ForgeSyntax
 
-declare_syntax_cat f_pred
+declare_syntax_cat forge_pred
 
 /--
 ### Predicates
@@ -31,7 +31,7 @@ pred parentOrChildOf[p1, p2: Person] {
 
 and then write something like `some p : Person | parentOrChildOf[Tim, p]`. Predicates may be used like this anywhere a formula can appear.
 -/
-syntax "pred" ident ("[" f_args "]")? "{" f_fmla* "}" : f_pred
+syntax "pred" ident ("[" forge_args "]")? "{" forge_fmla* "}" : forge_pred
 
 -- TODO: translate test code
 

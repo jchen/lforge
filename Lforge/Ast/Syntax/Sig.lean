@@ -4,44 +4,44 @@ Forge syntax for **fields** and **sigs**.
 
 namespace ForgeSyntax
 
-declare_syntax_cat f_sig_multiplicity
+declare_syntax_cat forge_sig_multiplicity
 /--
 `one` states that there is always exactly one object of that sig.
 -/
-syntax "one" : f_sig_multiplicity
+syntax "one" : forge_sig_multiplicity
 /--
 `lone` states there is never more than one object of this sig. That is, that there are zero or one.
 -/
-syntax "lone" : f_sig_multiplicity
+syntax "lone" : forge_sig_multiplicity
 /-- `abstract` states that any object of this sig must also be a member of some child sig. -/
-syntax "abstract" : f_sig_multiplicity
+syntax "abstract" : forge_sig_multiplicity
 
-declare_syntax_cat f_field_multiplicity
+declare_syntax_cat forge_field_multiplicity
 /--
 There is a single object of this field.
 
 On an arrow type `A → B`, this means that this relation contains exactly one pair of `A × B`.
 -/
-syntax "one" : f_field_multiplicity
+syntax "one" : forge_field_multiplicity
 /--
 There is at most one object of this field.
 -/
-syntax "lone" : f_field_multiplicity
+syntax "lone" : forge_field_multiplicity
 -- TODO: Relax arity-2 condition?
 /--
 The relation **must** have arity 2. On relations from `A → B`, `pfunc` states that the relation is a partial function.
 -/
-syntax "pfunc" : f_field_multiplicity
+syntax "pfunc" : forge_field_multiplicity
 /--
 The relation **must** have arity 2. On relations from `A → B`, `func` states that the relation is a total function.
 -/
-syntax "func" : f_field_multiplicity
+syntax "func" : forge_field_multiplicity
 /--
 `set` states that the relation is a set, this does not produce any additional quantifications or restraints.
 -/
-syntax "set" : f_field_multiplicity
+syntax "set" : forge_field_multiplicity
 
-declare_syntax_cat f_field
+declare_syntax_cat forge_field
 /--
 ### Fields
 Fields allow us to define relationships between a given `sig`s and other components of our model. Each _field_ in a `sig` has:
@@ -58,10 +58,10 @@ sig Person {
 ```
 The `lone` multiplicity says that the field may contain at most one atom. (Note that this example has yet to express the constraint that everyone has a friend!)
 -/
-syntax ident,+ ":" f_field_multiplicity sepBy1(ident, " -> ") : f_field
+syntax ident,+ ":" forge_field_multiplicity sepBy1(ident, " -> ") : forge_field
 
-declare_syntax_cat f_sig
-declare_syntax_cat f_sig'
+declare_syntax_cat forge_sig
+declare_syntax_cat forge_sig'
 /--
 ### Sigs
 _Sigs_ (short for "signatures") are the basic building block of any model in Forge. They represent the types of the system being modeled. To declare one, use the `sig` keyword.
@@ -81,10 +81,10 @@ sig <name> {
 }
 ```
 -/
-syntax f_sig' : f_sig
-syntax f_sig_multiplicity ? "sig" ident,+ "{" f_field,* "}" : f_sig'
+syntax forge_sig' : forge_sig
+syntax forge_sig_multiplicity ? "sig" ident,+ "{" forge_field,* "}" : forge_sig'
 
-declare_syntax_cat f_extends
+declare_syntax_cat forge_extends
 /--
 Sigs may inherit from other sigs via the `extends` keyword:
 
@@ -110,7 +110,7 @@ sig ProgrammerCat extends Cat {}
 
 This means that any `ProgrammerCat` object is also a `Cat` object, and so will have a `favoriteFood` field. But only `ActorCat`s have the `playName` field. Moreover, any cat may be either an `ActorCat`, `ProgrammerCat`, or neither---but not both.
 -/
-syntax "extends" ident : f_extends
-syntax f_sig_multiplicity ? "sig" ident,+ f_extends "{" f_field,* "}" : f_sig'
+syntax "extends" ident : forge_extends
+syntax forge_sig_multiplicity ? "sig" ident,+ forge_extends "{" forge_field,* "}" : forge_sig'
 
 end ForgeSyntax

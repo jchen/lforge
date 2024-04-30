@@ -26,3 +26,5 @@ theorem no_barber : ¬ existsBarber := by
   existsi b
   tauto
   done
+
+check existsBarber

@@ -6,9 +6,9 @@ set_option autoImplicit false
 
 namespace ForgeSyntax
 
-def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
+def Predicate.of_syntax (stx : TSyntax `forge_pred) : MetaM Predicate :=
   match stx with
-  | `(f_pred| pred $name:ident { $fmla:f_fmla* }) => do
+  | `(forge_pred| pred $name:ident { $fmla:forge_fmla* }) => do
     let args := []
     -- Join fmla list with `ands`. No base case, if empty, then true. Else one element.
     let body ← ( match fmla.toList with
@@ -20,7 +20,7 @@ def Predicate.of_syntax (stx : TSyntax `f_pred) : MetaM Predicate :=
         return .binop .and (← Formula.of_syntax elt) acc stx) init )
     return { name := name.getId, name_tok := name, args := args, body := body }
   -- Predicate definition _with_ arguments/bindings
-  | `(f_pred| pred $name:ident [ $args:f_args ] { $fmla:f_fmla* }) => do
+  | `(forge_pred| pred $name:ident [ $args:forge_args ] { $fmla:forge_fmla* }) => do
     let args ← Arguments.of_syntax args
     -- Join fmla list with `ands`. No base case, if empty, then true. Else one element.
     let body ← ( match fmla.toList with

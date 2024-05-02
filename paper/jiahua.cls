@@ -153,7 +153,7 @@
     urlcolor  = Blue,
     citecolor = Blue,
     anchorcolor = Blue]{hyperref}
-\RequirePackage[nameinlink]{cleveref}
+\RequirePackage[noabbrev,nameinlink]{cleveref}
 
 % Underlining
 \RequirePackage{soul}

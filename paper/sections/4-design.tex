@@ -1,7 +1,7 @@
 % !TEX root = ../paper.tex
 \section{Design}
 \subsection{Design Summary}\label{sec:design-summary}
-Lean 4 is a good target for our translation as well as a suitable language to implement our translation in because Lean 4 is mostly implemented in itself. As users, we can utilize and emit the same data structures used in Lean's implementation to extend the functionality of Lean \cite{moura2021lean}. These metaprogramming capabilities of Lean make our work implementing a Forge module in Lean much easier. 
+Lean 4 is a good target for our translation as well as a suitable language in which to implement our translation because Lean 4 is mostly implemented in itself. As users, we can utilize and emit the same data structures used in Lean's implementation to extend the functionality of Lean \cite{moura2021lean}. These metaprogramming capabilities of Lean make our work implementing a Forge module in Lean much easier. 
 
 The Lean 4 compilation process is structured as in \cref{fig:lean-compilation}. 
 \begin{figure}[h!]
@@ -11,7 +11,7 @@ The Lean 4 compilation process is structured as in \cref{fig:lean-compilation}.
 \label{fig:lean-compilation}
 \end{figure}
 
-Specifically, the parsing and elaboration steps are designed to be highly customizable and are provided as a `first-class' feature of Lean 4. We approach the problem of translating Forge into Lean as a task of adding new language features to Lean itself. We define our own Lean syntax objects that correspond to a concrete syntax tree (CST) of Forge and implement a parser for Forge (see \cref{sec:parsing}), and then implement a custom elaboration function for our Forge syntax to translate it into native Lean expressions (see \cref{sec:elaboration}). \textsc{Lforge}'s translation process, which is tightly integrated into the Lean compilation process, is outlined in \cref{fig:lforge-process}. 
+Specifically, the parsing and elaboration steps are designed to be highly customizable and are provided as a `first-class' feature of Lean 4. We approach the problem of translating Forge into Lean as a task of adding new language features to Lean itself. We define our own Lean syntax objects that correspond to an abstract syntax tree (AST) of Forge \footnote{That is, a model for a deep embedding of Forge in Lean.} and implement a parser for Forge (see \cref{sec:parsing}); we then implement a custom translation function for our Forge syntax to translate it into native Lean expressions (see \cref{sec:elaboration}). \textsc{Lforge}'s translation process, which is tightly integrated into the Lean elaboration process, is outlined in \cref{fig:lforge-process}. 
 
 \begin{figure}[h!]
 \centering
@@ -20,18 +20,18 @@ Specifically, the parsing and elaboration steps are designed to be highly custom
 \label{fig:lforge-process}
 \end{figure}  
 
-As a result, there is as little additional overhead as possible when translating a Forge specification in Lean. After users have imported our module, all Forge expressions \emph{are} valid Lean expressions and the two languages can be used interchangeably\footnote{We are very fortunate that there are few to no conflicts between Forge and Lean syntax that would hinder this. We provide a flag \texttt{\#lang forge} following Forge's Racket \texttt{\#lang} syntax when users want to explicitly denote Forge code, and the Lean parser will try to parse as many succeeding lines as Forge as possible.}. Definitions can be passed to and from (see Mixed Execution, \cref{sec:dsl}), and most notably Forge predicates can be proven in Lean. 
+As a result, there is as little additional overhead as possible when translating a Forge specification in Lean. After users have imported our module, all Forge expressions \emph{are} valid Lean expressions and the two languages can be used interchangeably\footnote{We are very fortunate that there are few to no conflicts between Forge and Lean syntax that would hinder this. Even line comments share the same syntax! We provide a flag \texttt{\#lang forge} following Forge's Racket \texttt{\#lang} syntax when users want to explicitly denote Forge code, and the Lean parser will try to parse as many succeeding lines as Forge as possible.}. Definitions can be passed to and from Forge (see Mixed Specification, \cref{sec:dsl}), and most notably Forge predicates can be proven in Lean. 
 
 \subsection{Syntax, Parsing, and the Forge AST}\label{sec:parsing}
-In the case of parsing, by defining the Forge grammar in the same specification format that Lean defines its syntax in, we can rely on Lean's parser to parse Forge source code for us.
+In the case of parsing, by defining the Forge grammar in the same specification format that Lean defines its syntax in, we can rely on Lean's parser to parse Forge source code for us. Lean's parser takes the source code string and produces the \texttt{TSyntax `forge_program} described in \cref{fig:lforge-process}. 
 
 The benefits of this are two-sided:
 \begin{enumerate}
   \item We are provided \texttt{Syntax}-typed Lean objects at the end of this process, the same type that parsing a Lean program would produce. This enables us to treat our Forge implementation as an implementation of additional Lean language features, and we can also harness Lean metaprogramming libraries along the way. This is to say, we are implementing Forge in Lean the \emph{same way} Lean is implemented in Lean, which greatly reduces our burden for additional implementation overhead.
-  \item By defining Forge `blocks' as a Lean \texttt{command}---which is the top-level syntax category\footnote{For example, the top-level definition in Lean ``\texttt{def x: Int := 0}'' is a `command'.}---users of the tool can insert raw Forge, without any annotations that this is an ``extension language'', into Lean. With the addition of an import statement, every Forge program \emph{is} a valid Lean program.
+  \item By defining Forge `blocks' as a Lean \texttt{command}---which is the top-level syntax category\footnote{For example, a top-level definition in Lean such as ``\texttt{def x: Int := 0}'' is a `command'.}---users of the tool can insert raw Forge, without any annotations that this is an ``extension language'', into Lean. With the addition of an import statement, every Forge program \emph{is} a valid Lean program.
 \end{enumerate}
 
-Lean allows us to create \emph{syntax categories} for each nonterminal symbol in our grammar. At the top-level, we have defined \texttt{f\_sig} (Sigs), \texttt{f\_pred} (Predicates), \texttt{f\_fun} (Functions). Terms are either \texttt{f\_fmla} for formulas (evaluate to True or False) or \texttt{f\_expr} for expressions (evaluate to a set, relation, int).
+Lean allows us to create \emph{syntax categories} for each nonterminal symbol in our grammar. At the top-level, we have defined \texttt{forge\_sig} (Sigs), \texttt{forge\_pred} (Predicates), \texttt{forge\_fun} (Functions). Terms are either \texttt{forge\_fmla} for formulas (evaluate to True or False) or \texttt{forge\_expr} for expressions (evaluate to a set, relation, int).
 
 For example, the grammar\footnote{Where $,+$ and $,*$ denote one/zero or more comma-separated occurrences respectively. $+$ and $*$ denote one/zero or more repetitions.} of Forge arguments and predicates is:
 
@@ -50,19 +50,19 @@ For example, the grammar\footnote{Where $,+$ and $,*$ denote one/zero or more co
 
 Which we can translate into a corresponding syntax definition in Lean:
 \begin{leanimpl*}
-declare_syntax_cat f_arg
-syntax ident,+ ":" f_expr : f_arg
+declare_syntax_cat forge_arg
+syntax ident,+ ":" forge_expr : forge_arg
 
-declare_syntax_cat f_args
-syntax f_arg,* : f_args
+declare_syntax_cat forge_args
+syntax forge_arg,* : forge_args
 
-declare_syntax_cat f_pred
-syntax "pred" ident ("[" f_args "]")? "{" f_fmla* "}" : f_pred
+declare_syntax_cat forge_pred
+syntax "pred" ident ("[" forge_args "]")? "{" forge_fmla* "}" : forge_pred
 \end{leanimpl*}
 
-Following this blueprint, we can translate the entirety of the grammar of Forge\footnote{At least, a useful subset of the Forge language we care about. This is based on the grammar of Alloy \cite{jackson2012software,jackson2019alloy,ngpdbccdlrrvwwk-oopsla-2024}.} into Lean syntax definitions. This is provided in our package as the \texttt{Lforge.Ast} module (see \cref{appendix:code}).
+Following this blueprint, we can translate the grammar of Forge\footnote{At least, a useful subset of the Forge language we care about. This is based on the grammar of Alloy \cite{jackson2012software,jackson2019alloy,ngpdbccdlrrvwwk-oopsla-2024}.} into Lean syntax definitions. This is provided in our package as the \texttt{Lforge.Ast} module (see \cref{appendix:code}).
 
-What remains to be done is to convert syntax, almost one-to-one, into an AST for Forge, and then \emph{elaborate} (see \cref{sec:elaboration}) our AST into Lean expressions and declarations.
+What remains to be done is to convert syntax, one-to-one, into an AST for Forge, and then translate (see \cref{sec:elaboration}) our AST into Lean expressions and declarations.
 
 \begin{leanimpl*}
 structure Predicate where
@@ -95,19 +95,19 @@ yields the following deep embedding (AST) as the output of parsing:
 }
 \end{leanimpl*}
 
-Our overall parser has type \texttt{TSyntax `f_program → MetaM ForgeModel}\footnote{`Sub-parsers', like the one that parses single predicate declarations, are typed \texttt{TSyntax `f_pred → MetaM Predicate}. A \texttt{ForgeModel} structure wraps sigs, predicates, and functions into a single structure. }, where \texttt{f_program} is the top-level syntax category for Forge programs (lists of sigs, predicates, and functions), and \texttt{MetaM} is a metaprogramming monad that provides us with error reporting. Using this, we can then implement a translation of our Forge model into native Lean expressions and types. 
+Our overall Forge parser (which runs after the Lean parser) has type \texttt{TSyntax `forge_program → MetaM ForgeModel}\footnote{`Sub-parsers', like the one that parses single predicate declarations, are typed \texttt{TSyntax `forge_pred → MetaM Predicate}. A \texttt{ForgeModel} structure wraps sigs, predicates, and functions into a single structure. }, where \texttt{forge_program} is the top-level syntax category for Forge programs (lists of sigs, predicates, and functions), and \texttt{MetaM} is a metaprogramming monad that provides us with error reporting. Using this, we can then implement a translation of our Forge model into native Lean expressions and types. 
 
-\subsection{Elaboration}\label{sec:elaboration}
+\subsection{Translation}\label{sec:elaboration}
 
 Elaboration in Lean 4 processes Lean \texttt{Syntax} objects, which are the outputs of the Lean parser, into Lean \texttt{Expr} objects\footnote{Technically, \texttt{Expr} objects wrapped in relevant monads that allow us to implement side-effects, like error and info reporting within the Lean LSP (see \cref{sec:dsl}) and interact with Lean's environment.}, which are Lean's low-level kernel representations \cite{metaprogramming}. Elaboration is responsible for Lean's type and metavariable unification\footnote{That is, types are inferred, coerced, and type classes resolved at this step. Types, including implicit types, must be fully specified within \texttt{Expr} objects.}, which provides all the type information to Lean. 
 
-Analogously, \textsc{Lforge} implements a Forge-specific custom elaboration function that takes our deep embeddings of type \texttt{ForgeMode} and returns a \texttt{CommandElabM Unit} type, where the \texttt{CommandElabM} monad allows us to add declarations to the environment (and \texttt{Unit} because we don't expect top-level declarations/commands to return values). 
+Analogously, \textsc{Lforge} implements a Forge-specific custom elaboration function which performs our translation that takes our deep embeddings of type \texttt{ForgeModel} and returns a \texttt{CommandElabM Unit} type, where the \texttt{CommandElabM} monad allows us to add declarations to the environment (and \texttt{Unit} because we don't expect top-level declarations/commands to return values). 
 
 Our elaboration function takes care of elaborating sigs and fields into their corresponding opaque types (see \cref{sec:sigs}), and creates relevant definitions for predicates and functions, inserts the corresponding translations of formulas and expressions respectively (see below \cref{sec:forge-model}), and adds said definitions into the working Lean environment.
 
 \newpage
 \section{The Forge Model in Lean: An Overview}\label{sec:forge-model}
-We need to make careful choices of how we use elaboration (see above \cref{sec:elaboration}) to translate Forge concepts into corresponding Lean equivalents. While many of our translations are self-evident, others have complex subtleties. Having the \emph{means} to perform such a translation does not make the task of translation itself any easier. We need to ensure that the translation is coherent and interoperable\footnote{Informally, our translation should be like a homomorphism, preserving the structure of Forge models.}. 
+We need to make careful choices of how we translate Forge concepts into corresponding Lean equivalents. While many of our translations are self-evident, others have complex subtleties. We need to ensure that the translation is coherent and interoperable\footnote{Informally, our translation should be like a homomorphism, preserving the structure of Forge models.}. At the same time, we need to keep proofs and usability in mind when translating---we don't want translations to be overly complicated which would in turn burden the proof process. In some cases, we do elide translations when we think it would hinder this goal. 
 
 Here we outline the Forge syntax and give an overview of their equivalents in Lean. When there are nuances or specific edge cases in a particular translation, we refer to the appropriate section that addresses them. Where translations have not been implemented, we justify this conscious decision. 
 

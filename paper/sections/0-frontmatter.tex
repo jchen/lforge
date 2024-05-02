@@ -1,25 +1,28 @@
 % !TEX root = ../paper.tex
 \newpage
 \section*{Abstract}
-While formal methods are being increasingly applied in industry and are invaluable in allowing users to specify, model, and verify complex systems, the multitude of available tools offer little to no interoperability amongst each other. 
-There are no common formal methods models nor specification languages, and each tool offers precisely what its specific logical framework allows. 
+While formal methods are being applied increasingly in industry and are invaluable in allowing users to specify, model, and verify complex systems, the multitude of available tools offer little interoperability amongst each other. 
+There are no common formal methods models nor specification languages, and each tool offers precisely what its logical framework allows. 
+Many lie on opposite ends of the spectrum of automation and expressivity: while the likes of SAT and SMT solvers are highly automated, they trade that for the expressivity and logic of theorem provers. 
 This creates a dilemma in the field that while users understand the strengths and capabilities of formal methods tools, they are often not able to select a tool appropriate for the task at hand. 
 We present \textsc{Lforge}, a tool that implements the Forge specification language via a translation process as a language-level feature of Lean. 
-\textsc{Lforge} offers a `best-of-both-worlds' approach---allowing users to no longer be constrained by the bounded yet automatic resolving capabilities of Forge nor the tedious proof process of Lean.
-\textsc{Lforge} serves as an example of interfacing between two drastically different tools, thus allowing users to harness the resolving capabilities of two frameworks: Forge, an offshoot of the Alloy specification language based on a relational logic solver that can automatically prove facts about bounded models; and Lean, an interactive theorem prover that allows users to prove generalized statements. 
-In doing so, \textsc{Lforge} serves as a model of what specification portability might look like across different classes of formal methods tools, as well as a model of user experience in such a translation. 
-\textsc{Lforge} is furthermore one of the first experimentations of Lean 4's rich metaprogramming capabilities. This allows \textsc{Lforge} to be a full-fledged Forge DSL within Lean with a focus on usability-first despite operating within the constraints imposed by Forge and Lean's respective formal frameworks. 
+\textsc{Lforge} offers a `best-of-both-worlds' approach---allowing users to extend the bounded yet automatic resolving capabilities of Forge with proofs in Lean.
+\textsc{Lforge} serves as an example of interfacing between two drastically different tools, thus allowing users to harness the resolving capabilities of two frameworks: Forge, an offshoot of the Alloy specification language based on a relational logic solver that can automatically find instances of bounded models; and Lean, an interactive theorem prover that allows users to prove generalized statements. 
+In doing so, \textsc{Lforge} is a model of what specification portability might look like across different classes of formal methods tools, as well as a model of user experience in such a translation. 
+Furthermore, \textsc{Lforge} is one of the first experimentations of Lean 4's rich metaprogramming capabilities together with extensible syntax. This allows \textsc{Lforge} to be a fully-fledged Forge DSL within Lean with a focus on usability-first, despite operating within the constraints imposed by Forge and Lean's respective formal frameworks. 
 
 \newpage
 \section*{Acknowledgements}
 
-% First and foremost, I owe the greatest thanks to Rob Lewis. Thanks for being such a great thesis \emph{and} academic advisor, and generously contributing your opinions and expertise that have been so valuable over the years. Our countless advising meetings and weekly thesis meetings have become a highlight of my year---thanks for being patient with me as I learned so much, academically and personally (about myself), over the past year. 
+First and foremost, I owe the greatest thanks to Rob Lewis. Thanks for being such a great thesis \emph{and} academic advisor, and generously contributing your opinions and expertise that have been so valuable over the years. Our countless advising meetings and weekly thesis meetings have become a highlight of my year---thanks for being patient with me as I learned so much, academically and personally (about myself), over the past year and more. 
 
-\todo{Write acknowledgements...}
+Tim and Shriram were immensely helpful in ideating this project and serving as mentors throughout. I would like to thank Tim for his expertise in Forge and its semantics, which was much needed at times; and Shriram for always being there with his creative ideas which supported a lot of this work (Shriram and Tim jointly proposed this thesis project). Rob, Tim, and Shriram also all taught courses without which I would not be able to complete this project today. 
 
-% To my roommates, thanks for bearing with me as I paced and mulled in our living room countless times over this thesis. To my friends, thanks for making Brown a second home for me when home is an ocean away. Finally, to my family, thank you for your unwavering support in my academic journey. I love you all. \\
+To my roommates, thanks for bearing with me as I paced and mulled in our living room countless times over this thesis. To my friends, thanks for making Brown a second home for me when home is an ocean away. Finally, to my family, thank you for your unwavering support in my academic journey. 
 
-% \emph{No large language models were involved in the writing of this thesis.}
+I love you all. \\
+
+\emph{No large language models were involved in the writing of this thesis.}
 
 \newpage
 {
@@ -32,9 +35,9 @@ In doing so, \textsc{Lforge} serves as a model of what specification portability
 \addcontentsline{toc}{section}{Notation}
 % Throughout this paper, you might encounter some visual or symbolic notation that is specific to this project or specific to the semantics of Forge and/or Lean. These are noted here. 
 
-Code snippets and listings have been included in this paper to serve as examples, motivation, or to provide implementation details. Where they are included, the color of the code block denotes the source language and context. 
+Code snippets and listings have been included in this paper to serve as examples, motivation, or to provide implementation details. Where they are included, the color of the code block denotes the source language and context. \\
 
-The following is an example of a Lean implementation code block:
+\noindent The following is an example of a Lean implementation code block:
 \begin{leanimpl}
 -- This is the code block for the Lean implementation of our translation
 def forgeEnsureHasType (expectedType? : Option Expr) (e : Expr)
@@ -46,9 +49,9 @@ def forgeEnsureHasType (expectedType? : Option Expr) (e : Expr)
   else
     mkCoe expectedType e f? errorMsgHeader?
 \end{leanimpl}
-This denotes code from the implementation of the translation from Forge to Lean. This encompasses the parsing and elaboration of Forge syntax within Lean and is most often the metaprogramming implementation of Forge in Lean. 
+This denotes code from the implementation of the translation from Forge to Lean. This encompasses the parsing and elaboration of Forge syntax within Lean and is most often the metaprogramming implementation of Forge in Lean. \\
 
-The following is an example of a Forge code block: 
+\noindent The following is an example of a Forge code block: 
 \begin{forge}
 -- This is the code block for a snippet of a model specification in Forge
 sig Node {
@@ -58,9 +61,9 @@ pred connected[a : Node, b : Node] {
   b in a.neighbors
 }
 \end{forge}
-This denotes examples of a model specification (or a snippet of a model) in Forge. 
+This denotes examples of a model specification (or a snippet of a model) in Forge. \\
 
-The following is an example of a Lean translation code block:
+\noindent The following is an example of a Lean translation code block:
 \begin{lean}
 -- This is the code block for the translated Lean equivalent of a Forge snippet
 opaque Node : Type
@@ -69,4 +72,4 @@ opaque neighbors : Node → Node → Prop
 def connected (a : Node) (b : Node) : Prop :=
   neighbors a b
 \end{lean}
-This denotes examples of the translated version of a Forge model or snippet. This is oftentimes the translated Lean code that is emitted out of our program. 
+This denotes examples of the translated version of a Forge model or snippet. This is most often the translated Lean code that is emitted out of our program. 

@@ -6,7 +6,11 @@
 
 \subsection[]{Data Availability}\label{appendix:code}
 
-The source code for \textsc{Lforge}, including all mentioned examples and proofs, is publicly available at this repository: \url{https://github.com/jchen/lforge}. The source code at the time of this thesis being submitted is tagged \texttt{thesis}. \todo{Check tag.}\textsc{Lforge} is available as a package and can be included as a dependency using Lake. 
+The source code for \textsc{Lforge}, including all mentioned examples and proofs, is publicly available at this repository: \url{https://github.com/jchen/lforge}. The source code at the time of this thesis being submitted is tagged \texttt{thesis}. \textsc{Lforge} is available as a package and can be included as a dependency using Lake with the following command: 
+
+\begin{leanimpl*}
+require Lforge from git "https://github.com/jchen/lforge.git" @ "main"
+\end{leanimpl*}
 
 \subsection[]{Barber Paradox Proof}\label{appendix:barber-proof}
 
@@ -43,6 +47,6 @@ The Forge specification for this example is taken from \cite{l4s} with slight mo
 \subsection[]{Additional Examples}\label{appendix:additional-examples}
 Additional examples are also provided in the \texttt{examples} directory. 
 
-Two examples, Tic-Tac-Toe and `Grandpa', are based on course content from Logic for Systems \cite{l4s} with minimal modifications. They serve solely to illustrate the capabilities of \textsc{Lforge} on translating existing programs, and we do not claim to make additional contributions to these models. Tic-Tac-Toe is at the following path: \texttt{examples/Board.lean}, and the `Grandpa' is at the following path: \texttt{examples/Grandpa.lean}. 
+Two examples, Tic-Tac-Toe and `Grandpa', are based on course content from Logic for Systems \cite{l4s} with minimal modifications. They serve solely to illustrate the capabilities of \textsc{Lforge} on translating existing programs, and we do not claim to make additional contributions to these models. Tic-Tac-Toe is at the following path: \texttt{examples/Board.lean}, and `Grandpa' is at the following path: \texttt{examples/Grandpa.lean}. 
 
 The specification regarding the two-phase atomic commitment protocol is inspired by \cite{distributedforge} but does not use any code directly from the repository. This serves as an example of a more complex distributed system protocol that is translatable. The two-phase commitment protocol example is at the following path: \texttt{examples/TwoPC.lean}. 
